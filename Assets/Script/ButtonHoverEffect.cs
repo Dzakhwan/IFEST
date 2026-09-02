@@ -9,6 +9,12 @@ public class ButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [SerializeField] private float clickScale = 0.95f;
     [SerializeField] private float animationSpeed = 15f;
 
+    [Header("Sprite Swap Settings (Optional)")]
+    [SerializeField] private bool useSpriteSwap = false;
+    [SerializeField] private Image targetImage;
+    [SerializeField] private Sprite normalSprite;
+    [SerializeField] private Sprite hoverSprite;
+
     [Header("Color Highlight (Optional)")]
     [SerializeField] private Graphic targetGraphic;
     [SerializeField] private bool useColorHighlight = true;
@@ -30,8 +36,16 @@ public class ButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
         originalScale = transform.localScale;
         targetScale = originalScale;
 
+        // Auto-assign graphic components if null
         if (targetGraphic == null)
             targetGraphic = GetComponent<Graphic>();
+
+        if (targetImage == null)
+            targetImage = GetComponent<Image>();
+
+        // Auto-store default sprite & color
+        if (targetImage != null && normalSprite == null)
+            normalSprite = targetImage.sprite;
 
         if (targetGraphic != null)
         {
@@ -45,10 +59,14 @@ public class ButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void OnDisable()
     {
-        // Reset scale and color if component gets disabled
+        // Reset scale, color, and sprite if component gets disabled
         transform.localScale = originalScale;
         if (targetGraphic != null)
             targetGraphic.color = normalColor;
+
+        if (useSpriteSwap && targetImage != null && normalSprite != null)
+            targetImage.sprite = normalSprite;
+
         isHovered = false;
     }
 
@@ -70,6 +88,12 @@ public class ButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
         targetScale = originalScale * hoverScale;
         if (useColorHighlight) targetColor = hoverColor;
 
+        // Swap to Hover Sprite
+        if (useSpriteSwap && targetImage != null && hoverSprite != null)
+        {
+            targetImage.sprite = hoverSprite;
+        }
+
         PlaySound(hoverSound);
     }
 
@@ -78,6 +102,12 @@ public class ButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
         isHovered = false;
         targetScale = originalScale;
         if (useColorHighlight) targetColor = normalColor;
+
+        // Revert to Normal Sprite
+        if (useSpriteSwap && targetImage != null && normalSprite != null)
+        {
+            targetImage.sprite = normalSprite;
+        }
     }
 
     public void OnPointerDown(PointerEventData eventData)
