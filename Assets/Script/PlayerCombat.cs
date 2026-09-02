@@ -73,6 +73,7 @@ public class PlayerCombat : MonoBehaviour
                     if (success)
                     {
                         comboCount++;
+                        BeatManager.Instance.SetCombo(comboCount);
                         Debug.Log($"<color=green>[1-HIT TURN KILL: {rating.ToString().ToUpper()}]</color> Combo x{comboCount}");
                         OnAttackExecuted?.Invoke(rating, comboCount, $"{rating.ToString().ToUpper()}!");
 
@@ -83,6 +84,7 @@ public class PlayerCombat : MonoBehaviour
                 else
                 {
                     comboCount = 0;
+                    BeatManager.Instance.SetCombo(0);
                     Debug.Log($"<color=red>[OUT OF TURN]</color> Enemy is waiting for its turn! Combo reset.");
                     OnAttackExecuted?.Invoke(HitRating.Miss, 0, "OUT OF TURN!");
                 }
@@ -90,6 +92,7 @@ public class PlayerCombat : MonoBehaviour
             else
             {
                 comboCount = 0;
+                BeatManager.Instance.SetCombo(0);
                 Debug.Log($"<color=orange>[WHIFF]</color> No enemy at waypoint {currentWaypoint}. Combo reset.");
                 OnAttackExecuted?.Invoke(HitRating.Miss, 0, "NO TARGET!");
             }
@@ -97,6 +100,7 @@ public class PlayerCombat : MonoBehaviour
         else
         {
             comboCount = 0;
+            BeatManager.Instance.SetCombo(0);
             Debug.Log($"<color=red>[RHYTHM MISS]</color> Off beat! Combo reset.");
             OnAttackExecuted?.Invoke(HitRating.Miss, 0, "MISS!");
         }

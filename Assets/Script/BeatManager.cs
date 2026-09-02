@@ -13,18 +13,23 @@ public class BeatManager : MonoBehaviour
     public static BeatManager Instance { get; private set; }
 
     [Header("Rhythm Settings")]
-    [SerializeField] private float bpm = 120f;
-    [SerializeField] private float perfectWindow = 0.08f; // ± Seconds
-    [SerializeField] private float goodWindow = 0.15f;    // ± Seconds
+    [SerializeField] private float baseBpm = 120f;
+    [SerializeField] private float bpmPerCombo = 3f;      // Add 3 BPM per combo streak
+    [SerializeField] private float maxBpm = 220f;          // Maximum tempo cap
+    [SerializeField] private float perfectWindow = 0.08f;  // ± Seconds
+    [SerializeField] private float goodWindow = 0.15f;     // ± Seconds
 
     [Header("Audio (Optional)")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private bool playMetronomeClick = false;
+    [SerializeField] private bool syncAudioPitchWithBpm = true;
 
     // Events
     public event Action<int> OnBeat;
     public event Action<HitRating> OnHitEvaluated;
+    public event Action<float> OnBpmChanged;
 
+    private float currentBpm;
     private double songStartTime;
     private float secPerBeat;
     private int currentBeat = -1;
@@ -39,7 +44,8 @@ public class BeatManager : MonoBehaviour
         }
         Instance = this;
 
-        secPerBeat = 60f / bpm;
+        currentBpm = baseBpm;
+        secPerBeat = 60f / currentBpm;
     }
 
     private void Start()
@@ -49,15 +55,38 @@ public class BeatManager : MonoBehaviour
 
     public void StartRhythm()
     {
-        secPerBeat = 60f / bpm;
+        currentBpm = baseBpm;
+        secPerBeat = 60f / currentBpm;
         songStartTime = AudioSettings.dspTime;
         isPlaying = true;
         currentBeat = -1;
 
         if (audioSource != null)
         {
+            audioSource.pitch = 1.0f;
             audioSource.Play();
         }
+    }
+
+    /// <summary>
+    /// Dynamically scales BPM based on the player's active combo count.
+    /// </summary>
+    public void SetCombo(int comboCount)
+    {
+        float targetBpm = Mathf.Min(baseBpm + (comboCount * bpmPerCombo), maxBpm);
+        if (Mathf.Approximately(targetBpm, currentBpm)) return;
+
+        currentBpm = targetBpm;
+        secPerBeat = 60f / currentBpm;
+
+        // Sync Audio pitch if audio source exists
+        if (audioSource != null && syncAudioPitchWithBpm && baseBpm > 0)
+        {
+            audioSource.pitch = currentBpm / baseBpm;
+        }
+
+        OnBpmChanged?.Invoke(currentBpm);
+        Debug.Log($"<color=orange>[TEMPO SPEED UP]</color> Combo x{comboCount} ➔ BPM: {currentBpm:F1}");
     }
 
     private void Update()
@@ -74,8 +103,7 @@ public class BeatManager : MonoBehaviour
 
             if (playMetronomeClick && audioSource == null)
             {
-                // Simple debug log for metronome pulse when audio source isn't set
-                Debug.Log($"<color=cyan>[BEAT {currentBeat}]</color>");
+                Debug.Log($"<color=cyan>[BEAT {currentBeat}] BPM: {currentBpm:F0}</color>");
             }
         }
     }
@@ -119,7 +147,8 @@ public class BeatManager : MonoBehaviour
         return (float)((songTime / secPerBeat) % 1.0);
     }
 
-    public float Bpm => bpm;
+    public float BaseBpm => baseBpm;
+    public float Bpm => currentBpm;
     public float SecPerBeat => secPerBeat;
     public int CurrentBeat => currentBeat;
 }
