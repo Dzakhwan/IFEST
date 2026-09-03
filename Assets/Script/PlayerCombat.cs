@@ -7,6 +7,7 @@ public class PlayerCombat : MonoBehaviour
     [Header("References")]
     [SerializeField] private InputHandler inputHandler;
     [SerializeField] private PlayerMovement playerMovement;
+    [SerializeField] private Animator animator;
 
     // Events
     public event Action<HitRating, int, string> OnAttackExecuted; // rating, combo, customMessage
@@ -19,6 +20,8 @@ public class PlayerCombat : MonoBehaviour
             inputHandler = GetComponent<InputHandler>();
         if (playerMovement == null)
             playerMovement = GetComponent<PlayerMovement>();
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
     }
 
     private void Start()
@@ -58,7 +61,7 @@ public class PlayerCombat : MonoBehaviour
 
         HitRating rating = BeatManager.Instance.EvaluateHitTiming();
         int currentWaypoint = playerMovement != null ? playerMovement.GetCurrentWaypointIndex() : 0;
-        
+
         // Find active target enemy in line
         Enemy activeEnemy = GetActiveTargetEnemy();
         Enemy enemyAtWaypoint = FindEnemyAtWaypoint(currentWaypoint);
@@ -69,6 +72,7 @@ public class PlayerCombat : MonoBehaviour
             {
                 if (enemyAtWaypoint == activeEnemy && enemyAtWaypoint.IsActiveTarget)
                 {
+                    animator.SetTrigger("Attack");
                     bool success = enemyAtWaypoint.ProcessHit(rating);
                     if (success)
                     {

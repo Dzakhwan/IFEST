@@ -31,9 +31,11 @@ public class BeatManager : MonoBehaviour
 
     private float currentBpm;
     private double songStartTime;
+    private double pauseStartTime;
     private float secPerBeat;
     private int currentBeat = -1;
     private bool isPlaying = false;
+    private bool isPaused = false;
 
     private void Awake()
     {
@@ -59,12 +61,46 @@ public class BeatManager : MonoBehaviour
         secPerBeat = 60f / currentBpm;
         songStartTime = AudioSettings.dspTime;
         isPlaying = true;
+        isPaused = false;
         currentBeat = -1;
 
         if (audioSource != null)
         {
             audioSource.pitch = 1.0f;
             audioSource.Play();
+        }
+    }
+
+    /// <summary>
+    /// Pauses rhythm tracking and audio playback.
+    /// </summary>
+    public void PauseRhythm()
+    {
+        if (!isPlaying || isPaused) return;
+
+        isPaused = true;
+        pauseStartTime = AudioSettings.dspTime;
+
+        if (audioSource != null && audioSource.isPlaying)
+        {
+            audioSource.Pause();
+        }
+    }
+
+    /// <summary>
+    /// Resumes rhythm tracking and audio playback, adjusting timing offsets.
+    /// </summary>
+    public void ResumeRhythm()
+    {
+        if (!isPlaying || !isPaused) return;
+
+        double pauseDuration = AudioSettings.dspTime - pauseStartTime;
+        songStartTime += pauseDuration;
+        isPaused = false;
+
+        if (audioSource != null)
+        {
+            audioSource.UnPause();
         }
     }
 
@@ -91,7 +127,7 @@ public class BeatManager : MonoBehaviour
 
     private void Update()
     {
-        if (!isPlaying) return;
+        if (!isPlaying || isPaused) return;
 
         double songTime = AudioSettings.dspTime - songStartTime;
         int beatIndex = (int)(songTime / secPerBeat);
@@ -113,7 +149,7 @@ public class BeatManager : MonoBehaviour
     /// </summary>
     public HitRating EvaluateHitTiming()
     {
-        if (!isPlaying) return HitRating.Miss;
+        if (!isPlaying || isPaused) return HitRating.Miss;
 
         double songTime = AudioSettings.dspTime - songStartTime;
         double nearestBeatTime = Math.Round(songTime / secPerBeat) * secPerBeat;
@@ -142,7 +178,7 @@ public class BeatManager : MonoBehaviour
     /// </summary>
     public float GetBeatProgress()
     {
-        if (!isPlaying || secPerBeat <= 0) return 0f;
+        if (!isPlaying || isPaused || secPerBeat <= 0) return 0f;
         double songTime = AudioSettings.dspTime - songStartTime;
         return (float)((songTime / secPerBeat) % 1.0);
     }
