@@ -1,10 +1,22 @@
 fileFormatVersion: 2
-guid: 1a296d73396a4a5438a111d3782566aa
+guid: 69cfe8d528b1e1847a56b86d9aba4802
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -642407422553194737
-    second: Button_START_Hover_0
+      213: -1098000740295697613
+    second: Text_Miss_Left_0
+  - first:
+      213: 4254218429383782718
+    second: Text_Miss_Left_1
+  - first:
+      213: -4174168060383227250
+    second: Text_Miss_Left_2
+  - first:
+      213: 3703324222084381241
+    second: Text_Miss_Left_3
+  - first:
+      213: -6047175216292913085
+    second: Text_Miss_Left_4
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +138,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Button_START_Hover_0
+      name: Text_Miss_Left_0
       rect:
         serializedVersion: 2
-        x: 49
-        y: 69
-        width: 2697
-        height: 1333
+        x: 22
+        y: 119
+        width: 1898
+        height: 1151
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +153,96 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f0f74a15ad5b517f0800000000000000
-      internalID: -642407422553194737
+      spriteID: 33b1f87e42e13c0f0800000000000000
+      internalID: -1098000740295697613
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Text_Miss_Left_1
+      rect:
+        serializedVersion: 2
+        x: 822
+        y: 116
+        width: 12
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e3137582f150a0b30800000000000000
+      internalID: 4254218429383782718
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Text_Miss_Left_2
+      rect:
+        serializedVersion: 2
+        x: 1717
+        y: 111
+        width: 17
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e829318c3406216c0800000000000000
+      internalID: -4174168060383227250
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Text_Miss_Left_3
+      rect:
+        serializedVersion: 2
+        x: 1742
+        y: 99
+        width: 17
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 93a707942c9d46330800000000000000
+      internalID: 3703324222084381241
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Text_Miss_Left_4
+      rect:
+        serializedVersion: 2
+        x: 1767
+        y: 87
+        width: 14
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 340a05a1e2e141ca0800000000000000
+      internalID: -6047175216292913085
       vertices: []
       indices: 
       edges: []
@@ -161,7 +261,11 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Button_START_Hover_0: -642407422553194737
+      Text_Miss_Left_0: -1098000740295697613
+      Text_Miss_Left_1: 4254218429383782718
+      Text_Miss_Left_2: -4174168060383227250
+      Text_Miss_Left_3: 3703324222084381241
+      Text_Miss_Left_4: -6047175216292913085
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -1,13 +1,22 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class RhythmUI : MonoBehaviour
 {
-    [Header("UI Preferences")]
-    [SerializeField] private bool useOnGUIDebugUI = true;
+    [Header("Custom Rating Sprites (2 Sprites Each)")]
+    [SerializeField] private Sprite[] perfectSprites = new Sprite[2];
+    [SerializeField] private Sprite[] goodSprites = new Sprite[2];
+    [SerializeField] private Sprite[] missSprites = new Sprite[2];
 
-    private string lastRatingText = "";
-    private Color ratingColor = Color.white;
+    [Header("UI Canvas Display Reference (Optional)")]
+    [SerializeField] private Image ratingImageDisplay;
+
+    [Header("UI Preferences")]
+    [SerializeField] private bool useOnGUIDebugUI = false;
+
+    private Sprite currentRatingSprite;
     private int currentCombo = 0;
     private float displayTimer = 0f;
 
@@ -18,95 +27,121 @@ public class RhythmUI : MonoBehaviour
         {
             combat.OnAttackExecuted += OnAttackResult;
         }
+
+        if (ratingImageDisplay != null)
+        {
+            ratingImageDisplay.gameObject.SetActive(false);
+        }
     }
 
     private void OnAttackResult(HitRating rating, int combo, string customMessage)
     {
         currentCombo = combo;
-        lastRatingText = !string.IsNullOrEmpty(customMessage) ? customMessage : rating.ToString().ToUpper() + "!";
+
+        // Ignore NO TARGET messages (do not display any rating popup)
+        if (!string.IsNullOrEmpty(customMessage) && customMessage.Contains("NO TARGET"))
+        {
+            ClearDisplay();
+            return;
+        }
+
+        // Select sprite based on rating
+        Sprite selectedSprite = null;
+
+        if (customMessage.Contains("OUT OF TURN") || customMessage.Contains("MISS") || rating == HitRating.Miss)
+        {
+            selectedSprite = GetRandomSprite(missSprites);
+        }
+        else if (rating == HitRating.Perfect)
+        {
+            selectedSprite = GetRandomSprite(perfectSprites);
+        }
+        else if (rating == HitRating.Good)
+        {
+            selectedSprite = GetRandomSprite(goodSprites);
+        }
+
+        currentRatingSprite = selectedSprite;
         displayTimer = 1.2f;
 
-        if (customMessage.Contains("OUT OF TURN") || customMessage.Contains("MISS"))
+        if (ratingImageDisplay != null)
         {
-            ratingColor = Color.red;
-        }
-        else if (customMessage.Contains("NO TARGET"))
-        {
-            ratingColor = Color.yellow;
-        }
-        else
-        {
-            switch (rating)
+            if (selectedSprite != null)
             {
-                case HitRating.Perfect:
-                    ratingColor = Color.yellow;
-                    break;
-                case HitRating.Good:
-                    ratingColor = Color.green;
-                    break;
-                default:
-                    ratingColor = Color.red;
-                    break;
+                ratingImageDisplay.sprite = selectedSprite;
+                ratingImageDisplay.gameObject.SetActive(true);
+            }
+            else
+            {
+                ratingImageDisplay.gameObject.SetActive(false);
             }
         }
 
         StopAllCoroutines();
-        StartCoroutine(ClearTextRoutine());
+        StartCoroutine(ClearDisplayRoutine());
     }
 
-    private IEnumerator ClearTextRoutine()
+    private Sprite GetRandomSprite(Sprite[] spriteArray)
+    {
+        if (spriteArray == null || spriteArray.Length == 0) return null;
+
+        List<Sprite> validSprites = new List<Sprite>();
+        foreach (var s in spriteArray)
+        {
+            if (s != null) validSprites.Add(s);
+        }
+
+        if (validSprites.Count == 0) return null;
+        return validSprites[Random.Range(0, validSprites.Count)];
+    }
+
+    private void ClearDisplay()
+    {
+        currentRatingSprite = null;
+        displayTimer = 0f;
+        if (ratingImageDisplay != null)
+        {
+            ratingImageDisplay.gameObject.SetActive(false);
+        }
+    }
+
+    private IEnumerator ClearDisplayRoutine()
     {
         while (displayTimer > 0)
         {
-            displayTimer -= Time.deltaTime;
+            displayTimer -= Time.unscaledDeltaTime;
             yield return null;
         }
-        lastRatingText = "";
+        ClearDisplay();
     }
 
     private void OnGUI()
     {
         if (!useOnGUIDebugUI) return;
 
-        // Visual Beat Metronome Indicator (Top Right)
-        if (BeatManager.Instance != null)
+        // Fallback OnGUI rendering if ratingImageDisplay is not assigned
+        if (ratingImageDisplay == null && currentRatingSprite != null && currentRatingSprite.texture != null)
         {
-            float progress = BeatManager.Instance.GetBeatProgress();
-            GUIStyle beatStyle = new GUIStyle(GUI.skin.box);
-            beatStyle.fontSize = 14;
-            beatStyle.normal.textColor = Color.cyan;
+            Texture2D tex = currentRatingSprite.texture;
+            float spriteWidth = tex.width;
+            float spriteHeight = tex.height;
+            Rect drawRect = new Rect((Screen.width - spriteWidth) / 2f, (Screen.height - spriteHeight) / 2f - 50f, spriteWidth, spriteHeight);
 
-            GUI.Box(new Rect(Screen.width - 240, 20, 220, 55), 
-                $"BPM: {BeatManager.Instance.Bpm}\nBeat: {BeatManager.Instance.CurrentBeat}");
-
-            // Pulsing beat bar
-            float barWidth = Mathf.Lerp(10, 200, progress);
-            Texture2D texture = Texture2D.whiteTexture;
-            GUI.color = Color.Lerp(Color.yellow, Color.cyan, progress);
-            GUI.DrawTexture(new Rect(Screen.width - 230, 58, barWidth, 8), texture);
-            GUI.color = Color.white;
-        }
-
-        // Hit Rating Display (Center Screen)
-        if (!string.IsNullOrEmpty(lastRatingText))
-        {
-            GUIStyle ratingStyle = new GUIStyle(GUI.skin.label);
-            ratingStyle.alignment = TextAnchor.MiddleCenter;
-            ratingStyle.fontSize = 38;
-            ratingStyle.fontStyle = FontStyle.Bold;
-            ratingStyle.normal.textColor = ratingColor;
-
-            GUI.Label(new Rect(Screen.width / 2f - 200, Screen.height / 2f - 100, 400, 60), lastRatingText, ratingStyle);
+            GUI.DrawTexture(drawRect, tex, ScaleMode.ScaleToFit);
 
             if (currentCombo > 1)
             {
-                GUIStyle comboStyle = new GUIStyle(GUI.skin.label);
-                comboStyle.alignment = TextAnchor.MiddleCenter;
-                comboStyle.fontSize = 26;
+                GUIStyle comboStyle = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    fontSize = 26,
+                    fontStyle = FontStyle.Bold
+                };
                 comboStyle.normal.textColor = Color.yellow;
 
-                GUI.Label(new Rect(Screen.width / 2f - 200, Screen.height / 2f - 40, 400, 40), $"COMBO x{currentCombo}", comboStyle);
+                GUI.Label(new Rect(Screen.width / 2f - 200, Screen.height / 2f + spriteHeight / 2f, 400, 40), $"COMBO x{currentCombo}", comboStyle);
             }
         }
     }
 }
+

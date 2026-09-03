@@ -26,6 +26,11 @@ public class ButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [SerializeField] private AudioClip clickSound;
     [SerializeField] private AudioSource audioSource;
 
+    [Header("Alpha Hit Test (Custom Shape)")]
+    [SerializeField] private bool useAlphaHitTest = true;
+    [Range(0f, 1f)]
+    [SerializeField] private float alphaThreshold = 0.1f;
+
     private Vector3 originalScale;
     private Vector3 targetScale;
     private Color targetColor;
@@ -55,6 +60,12 @@ public class ButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         if (audioSource == null)
             audioSource = GetComponent<AudioSource>();
+
+        // Apply Alpha Hit Test Threshold for irregular/custom sprite shapes
+        if (useAlphaHitTest && targetImage != null)
+        {
+            targetImage.alphaHitTestMinimumThreshold = alphaThreshold;
+        }
     }
 
     private void OnDisable()
@@ -72,13 +83,13 @@ public class ButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void Update()
     {
-        // Smoothly interpolate scale
-        transform.localScale = Vector3.Lerp(transform.localScale, targetScale, Time.deltaTime * animationSpeed);
+        // Smoothly interpolate scale (using unscaledDeltaTime so UI animates when paused)
+        transform.localScale = Vector3.Lerp(transform.localScale, targetScale, Time.unscaledDeltaTime * animationSpeed);
 
         // Smoothly interpolate graphic color if enabled
         if (useColorHighlight && targetGraphic != null)
         {
-            targetGraphic.color = Color.Lerp(targetGraphic.color, targetColor, Time.deltaTime * animationSpeed);
+            targetGraphic.color = Color.Lerp(targetGraphic.color, targetColor, Time.unscaledDeltaTime * animationSpeed);
         }
     }
 

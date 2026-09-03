@@ -1,10 +1,19 @@
 fileFormatVersion: 2
-guid: 372a92d44f97e3248a2ad537c0ff8453
+guid: 399f41765ed7b0340a7ab15dd7d18b26
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2912145962721862431
-    second: Button_START_Idle_0
+      213: 4511801634871255721
+    second: Text_Good_Right_0
+  - first:
+      213: 4787636671512326840
+    second: Text_Good_Right_1
+  - first:
+      213: 4274068415602889879
+    second: Text_Good_Right_2
+  - first:
+      213: 3312848508329009142
+    second: Text_Good_Right_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +135,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Button_START_Idle_0
+      name: Text_Good_Right_0
       rect:
         serializedVersion: 2
-        x: 57
-        y: 45
-        width: 2726
-        height: 1362
+        x: 61
+        y: 79
+        width: 1803
+        height: 848
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +150,74 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 1ec10e51daaf597d0800000000000000
-      internalID: -2912145962721862431
+      spriteID: 9a2278faea32d9e30800000000000000
+      internalID: 4511801634871255721
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Text_Good_Right_1
+      rect:
+        serializedVersion: 2
+        x: 326
+        y: 71
+        width: 13
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8b2302fcf2a117240800000000000000
+      internalID: 4787636671512326840
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Text_Good_Right_2
+      rect:
+        serializedVersion: 2
+        x: 372
+        y: 72
+        width: 17
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7941ab9349a805b30800000000000000
+      internalID: 4274068415602889879
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Text_Good_Right_3
+      rect:
+        serializedVersion: 2
+        x: 422
+        y: 77
+        width: 15
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6ff12a58a2a99fd20800000000000000
+      internalID: 3312848508329009142
       vertices: []
       indices: 
       edges: []
@@ -161,7 +236,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Button_START_Idle_0: -2912145962721862431
+      Text_Good_Right_0: 4511801634871255721
+      Text_Good_Right_1: 4787636671512326840
+      Text_Good_Right_2: 4274068415602889879
+      Text_Good_Right_3: 3312848508329009142
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
