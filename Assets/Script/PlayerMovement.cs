@@ -3,7 +3,9 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] private Rigidbody2D rb;
+    [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private InputHandler inputHandler;
+    [SerializeField] private Animator animator;
     [SerializeField] private Transform[] waypoints;
     [SerializeField] private float moveSpeed = 5f;
 
@@ -15,6 +17,8 @@ public class PlayerMovement : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         inputHandler = GetComponent<InputHandler>();
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
 
         if (waypoints.Length > 0)
         {
@@ -42,11 +46,14 @@ public class PlayerMovement : MonoBehaviour
 
         if (input.x > 0)
         {
+            spriteRenderer.flipX = false;
             MoveNext();
         }
         else if (input.x < 0)
         {
             MovePrevious();
+            spriteRenderer.flipX = true; // Flip sprite when moving left
+
         }
     }
 
@@ -62,6 +69,7 @@ public class PlayerMovement : MonoBehaviour
         $"Target: {waypoints[targetWaypointIndex].position}"
     );
         isMoving = true;
+        SetMovementAnimation(true);
     }
 
     private void MovePrevious()
@@ -71,6 +79,7 @@ public class PlayerMovement : MonoBehaviour
 
         targetWaypointIndex = currentWaypointIndex - 1;
         isMoving = true;
+        SetMovementAnimation(true);
     }
 
     private void MoveToWaypoint()
@@ -95,7 +104,14 @@ public class PlayerMovement : MonoBehaviour
             rb.position = targetPosition;
             currentWaypointIndex = targetWaypointIndex;
             isMoving = false;
+            SetMovementAnimation(false);
         }
+    }
+
+    private void SetMovementAnimation(bool moving)
+    {
+        if (animator != null)
+            animator.SetBool("IsDash", moving);
     }
 
     public int GetCurrentWaypointIndex()
