@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,6 +9,12 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField] private InputHandler inputHandler;
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private Animator animator;
+
+    [Header("Domino Chain Configuration (Fever Mode)")]
+    [Tooltip("If true, domino chain only propagates through enemies strictly adjacent with no empty slot gaps.")]
+    [SerializeField] private bool requireContiguousDomino = true;
+    [Tooltip("Maximum number of waiting enemies that can be wiped in a single domino chain.")]
+    [SerializeField] private int maxDominoChainCount = 3;
 
     // Events
     public event Action<HitRating, int, string> OnAttackExecuted; // rating, combo, customMessage
@@ -81,6 +88,22 @@ public class PlayerCombat : MonoBehaviour
                         Debug.Log($"<color=green>[1-HIT TURN KILL: {rating.ToString().ToUpper()}]</color> Combo x{comboCount}");
                         OnAttackExecuted?.Invoke(rating, comboCount, $"{rating.ToString().ToUpper()}!");
 
+                        // Check ToFever progress
+                        if (BeatManager.Instance.CurrentState == GameRhythmState.ToFever)
+                        {
+                            BeatManager.Instance.RegisterToFeverHit();
+                        }
+                        // Check trigger to ToFever from Normal mode (isolated Fever gauge)
+                        else if (BeatManager.Instance.CurrentState == GameRhythmState.Normal)
+                        {
+                            BeatManager.Instance.AddNormalFeverProgress();
+                        }
+                        // Trigger Domino Chain Reaction in Fever mode
+                        else if (BeatManager.Instance.IsFeverActive)
+                        {
+                            TriggerDominoChain(targetEnemy.WaypointIndex);
+                        }
+
                         // Advance turn to next enemy in line
                         AdvanceToNextTarget();
                     }
@@ -89,6 +112,14 @@ public class PlayerCombat : MonoBehaviour
                 {
                     comboCount = 0;
                     BeatManager.Instance.SetCombo(0);
+                    if (BeatManager.Instance.CurrentState == GameRhythmState.Normal)
+                    {
+                        BeatManager.Instance.ResetNormalFeverProgress();
+                    }
+                    else if (BeatManager.Instance.CurrentState == GameRhythmState.ToFever)
+                    {
+                        BeatManager.Instance.ResetToFeverHitsOnMiss();
+                    }
                     Debug.Log($"<color=red>[OUT OF TURN]</color> Enemy is waiting for its turn! Combo reset.");
                     OnAttackExecuted?.Invoke(HitRating.Miss, 0, "OUT OF TURN!");
                 }
@@ -97,6 +128,14 @@ public class PlayerCombat : MonoBehaviour
             {
                 comboCount = 0;
                 BeatManager.Instance.SetCombo(0);
+                if (BeatManager.Instance.CurrentState == GameRhythmState.Normal)
+                {
+                    BeatManager.Instance.ResetNormalFeverProgress();
+                }
+                else if (BeatManager.Instance.CurrentState == GameRhythmState.ToFever)
+                {
+                    BeatManager.Instance.ResetToFeverHitsOnMiss();
+                }
                 Debug.Log($"<color=orange>[WHIFF]</color> No enemy adjacent to waypoint {currentWaypoint}. Combo reset.");
                 OnAttackExecuted?.Invoke(HitRating.Miss, 0, "NO TARGET!");
             }
@@ -105,8 +144,106 @@ public class PlayerCombat : MonoBehaviour
         {
             comboCount = 0;
             BeatManager.Instance.SetCombo(0);
+            if (BeatManager.Instance.CurrentState == GameRhythmState.Normal)
+            {
+                BeatManager.Instance.ResetNormalFeverProgress();
+            }
+            else if (BeatManager.Instance.CurrentState == GameRhythmState.ToFever)
+            {
+                BeatManager.Instance.ResetToFeverHitsOnMiss();
+            }
             Debug.Log($"<color=red>[RHYTHM MISS]</color> Off beat! Combo reset.");
             OnAttackExecuted?.Invoke(HitRating.Miss, 0, "MISS!");
+        }
+    }
+
+    /// <summary>
+    /// Triggers a contiguous sequential domino explosion wiping out waiting enemies
+    /// positioned behind the defeated red target in the player's facing direction.
+    /// If requireContiguousDomino is true, any gap of empty slots terminates the chain.
+    /// </summary>
+    private void TriggerDominoChain(int redEnemySlot)
+    {
+        bool facingLeft = playerMovement != null && playerMovement.IsFacingLeft;
+        Enemy[] allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+
+        // Map blocking enemies by slot index
+        Dictionary<int, Enemy> enemySlotMap = new Dictionary<int, Enemy>();
+        foreach (var enemy in allEnemies)
+        {
+            if (enemy != null && enemy.IsBlocking)
+            {
+                enemySlotMap[enemy.WaypointIndex] = enemy;
+            }
+        }
+
+        List<Enemy> dominoVictims = new List<Enemy>();
+
+        if (requireContiguousDomino)
+        {
+            // Step slot-by-slot in player facing direction
+            int step = facingLeft ? -1 : 1;
+            int checkSlot = redEnemySlot + step;
+
+            while (dominoVictims.Count < maxDominoChainCount)
+            {
+                if (enemySlotMap.TryGetValue(checkSlot, out Enemy victim) && victim != null)
+                {
+                    dominoVictims.Add(victim);
+                    checkSlot += step;
+                }
+                else
+                {
+                    // Empty slot gap encountered: Domino chain stops!
+                    break;
+                }
+            }
+        }
+        else
+        {
+            // Fallback: take up to maxDominoChainCount enemies behind
+            List<Enemy> behindEnemies = new List<Enemy>();
+            foreach (var enemy in allEnemies)
+            {
+                if (enemy == null || !enemy.IsBlocking) continue;
+
+                if (facingLeft && enemy.WaypointIndex < redEnemySlot)
+                {
+                    behindEnemies.Add(enemy);
+                }
+                else if (!facingLeft && enemy.WaypointIndex > redEnemySlot)
+                {
+                    behindEnemies.Add(enemy);
+                }
+            }
+
+            if (facingLeft)
+            {
+                behindEnemies.Sort((a, b) => b.WaypointIndex.CompareTo(a.WaypointIndex));
+            }
+            else
+            {
+                behindEnemies.Sort((a, b) => a.WaypointIndex.CompareTo(b.WaypointIndex));
+            }
+
+            int countToTake = Mathf.Min(behindEnemies.Count, maxDominoChainCount);
+            for (int i = 0; i < countToTake; i++)
+            {
+                dominoVictims.Add(behindEnemies[i]);
+            }
+        }
+
+        if (dominoVictims.Count > 0)
+        {
+            float delayStep = 0.08f;
+            for (int i = 0; i < dominoVictims.Count; i++)
+            {
+                Enemy victim = dominoVictims[i];
+                victim.TriggerDominoDeath(delayStep * (i + 1));
+                comboCount++;
+            }
+            BeatManager.Instance.SetCombo(comboCount);
+            Debug.Log($"<color=red>[DOMINO CASCADE!]</color> {dominoVictims.Count} contiguous enemies wiped in chain reaction! Combo x{comboCount}");
         }
     }
 
