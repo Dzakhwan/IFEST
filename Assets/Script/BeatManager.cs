@@ -14,10 +14,10 @@ public class BeatManager : MonoBehaviour
 
     [Header("Rhythm Settings")]
     [SerializeField] private float baseBpm = 120f;
-    [SerializeField] private float bpmPerCombo = 3f;      // Add 3 BPM per combo streak
+    [SerializeField] private float bpmPerCombo = 1.5f;    // Add 1.5 BPM per combo streak (easier progression)
     [SerializeField] private float maxBpm = 220f;          // Maximum tempo cap
-    [SerializeField] private float perfectWindow = 0.08f;  // ± Seconds
-    [SerializeField] private float goodWindow = 0.15f;     // ± Seconds
+    [SerializeField] private float perfectWindow = 0.12f;  // ± Seconds (widened for easier timing)
+    [SerializeField] private float goodWindow = 0.22f;     // ± Seconds (widened for easier timing)
 
     [Header("Audio (Optional)")]
     [SerializeField] private AudioSource audioSource;
