@@ -2,24 +2,56 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class RhythmUI : MonoBehaviour
 {
-    [Header("Custom Rating Sprites (2 Sprites Each)")]
+    [Header("Rating Sprites (Left & Right Pairing)")]
+    [Tooltip("Index 0 = Left Sprite, Index 1 = Right Sprite")]
     [SerializeField] private Sprite[] perfectSprites = new Sprite[2];
     [SerializeField] private Sprite[] goodSprites = new Sprite[2];
     [SerializeField] private Sprite[] missSprites = new Sprite[2];
 
-    [Header("UI Canvas Display Reference (Optional)")]
-    [SerializeField] private Image ratingImageDisplay;
+    [Header("Hit Rating Display References")]
+    [SerializeField] private Image ratingImageDisplay;        // Single display with dynamic position offset
+    [SerializeField] private Image ratingImageDisplayLeft;    // Optional explicit left display
+    [SerializeField] private Image ratingImageDisplayRight;   // Optional explicit right display
+    [SerializeField] private float ratingOffsetX = 250f;      // Horizontal offset from center when using single display
+
+    [Header("Combo UI Tier Settings")]
+    [SerializeField] private Image comboImageDisplay;         // Canvas Image for Combo Banner/Badge
+    [SerializeField] private TextMeshProUGUI comboTextTMP;    // TextMeshPro component inside/overlaying combo sprite
+    [SerializeField] private Text comboTextLegacy;            // Standard UI Text fallback
+    [SerializeField] private Sprite comboTier1Sprite;         // Combo < 20
+    [SerializeField] private Sprite comboTier2Sprite;         // Combo 20 - 49
+    [SerializeField] private Sprite comboTier3Sprite;         // Combo >= 50
+
+    [Header("Combo Font Colors & Size Settings")]
+    [SerializeField] private Color comboTier1Color = new Color(0.12f, 0.65f, 0.95f, 1f);   // Blue (<20 combo)
+    [SerializeField] private Color comboTier2Color = new Color(0.98f, 0.85f, 0.05f, 1f);   // Yellow (20-49 combo)
+    [SerializeField] private Color comboTier3Color = new Color(0.98f, 0.18f, 0.42f, 1f);   // Red/Pink (>=50 combo)
+    [SerializeField] private float comboFontSize = 42f;                                     // Default font size
+    [SerializeField] private bool useAutoFontSize = true;                                   // Enable TextMeshPro Auto Sizing (24-54pt)
+
+    [Header("Combo Font Shadow Settings")]
+    [SerializeField] private bool enableTextShadow = true;                                  // Add drop shadow to combo text
+    [SerializeField] private Color textShadowColor = new Color(0f, 0f, 0f, 0.9f);         // Shadow color (Black)
+    [SerializeField] private Vector2 textShadowOffset = new Vector2(2.5f, -2.5f);         // Shadow offset (X, Y)
+
+    [Header("Combo Text Format Settings")]
+    [SerializeField] private string comboTextFormat = "{0}X";                               // Text format (e.g. "5X", "25X", "50X")
 
     [Header("Visual Metronome Settings")]
     [SerializeField] private bool showVisualMetronome = true;
     [SerializeField] private bool useOnGUIDebugUI = false;
 
+    private PlayerMovement playerMovement;
     private Sprite currentRatingSprite;
     private int currentCombo = 0;
     private float displayTimer = 0f;
+    private Coroutine comboPunchCoroutine;
+    private Coroutine ratingPopupCoroutine;
+    private Vector3 comboOriginalScale = Vector3.one;
 
     // Metronome GUI assets
     private static Texture2D whiteTex;
@@ -33,20 +65,25 @@ public class RhythmUI : MonoBehaviour
             whiteTex.SetPixel(0, 0, Color.white);
             whiteTex.Apply();
         }
+
+        if (comboImageDisplay != null)
+        {
+            comboOriginalScale = comboImageDisplay.transform.localScale;
+        }
     }
 
     private void Start()
     {
+        playerMovement = FindFirstObjectByType<PlayerMovement>();
+
         PlayerCombat combat = FindFirstObjectByType<PlayerCombat>();
         if (combat != null)
         {
             combat.OnAttackExecuted += OnAttackResult;
         }
 
-        if (ratingImageDisplay != null)
-        {
-            ratingImageDisplay.gameObject.SetActive(false);
-        }
+        ClearRatingDisplay();
+        UpdateComboUI(0);
 
         if (BeatManager.Instance != null)
         {
@@ -78,82 +115,260 @@ public class RhythmUI : MonoBehaviour
     private void OnAttackResult(HitRating rating, int combo, string customMessage)
     {
         currentCombo = combo;
+        UpdateComboUI(combo);
 
         // Ignore NO TARGET messages (do not display any rating popup)
         if (!string.IsNullOrEmpty(customMessage) && customMessage.Contains("NO TARGET"))
         {
-            ClearDisplay();
+            ClearRatingDisplay();
             return;
         }
 
-        // Select sprite based on rating
+        // Determine Player Position Side: Left vs Right
+        bool isPlayerOnLeftSide = IsPlayerOnLeftSide();
+
+        // Select correct sprite:
+        // When player is on LEFT -> show RIGHT rating sprite (Index 1) on RIGHT side of screen
+        // When player is on RIGHT -> show LEFT rating sprite (Index 0) on LEFT side of screen
+        int spriteIndex = isPlayerOnLeftSide ? 1 : 0;
+
         Sprite selectedSprite = null;
 
         if (customMessage.Contains("OUT OF TURN") || customMessage.Contains("MISS") || rating == HitRating.Miss)
         {
-            selectedSprite = GetRandomSprite(missSprites);
+            selectedSprite = GetRatingSprite(missSprites, spriteIndex);
         }
         else if (rating == HitRating.Perfect)
         {
-            selectedSprite = GetRandomSprite(perfectSprites);
+            selectedSprite = GetRatingSprite(perfectSprites, spriteIndex);
         }
         else if (rating == HitRating.Good)
         {
-            selectedSprite = GetRandomSprite(goodSprites);
+            selectedSprite = GetRatingSprite(goodSprites, spriteIndex);
         }
 
         currentRatingSprite = selectedSprite;
         displayTimer = 1.2f;
 
-        if (ratingImageDisplay != null)
+        // Display Rating on UI Canvas
+        ShowRatingUI(selectedSprite, isPlayerOnLeftSide);
+
+        if (ratingPopupCoroutine != null)
         {
-            if (selectedSprite != null)
+            StopCoroutine(ratingPopupCoroutine);
+        }
+        ratingPopupCoroutine = StartCoroutine(ClearRatingDisplayRoutine());
+    }
+
+    private bool IsPlayerOnLeftSide()
+    {
+        if (playerMovement == null)
+        {
+            playerMovement = FindFirstObjectByType<PlayerMovement>();
+        }
+
+        if (playerMovement != null)
+        {
+            // Check player transform position X relative to center (0)
+            return playerMovement.transform.position.x < 0f;
+        }
+        return true;
+    }
+
+    private Sprite GetRatingSprite(Sprite[] spriteArray, int index)
+    {
+        if (spriteArray == null || spriteArray.Length == 0) return null;
+        if (index >= 0 && index < spriteArray.Length && spriteArray[index] != null)
+        {
+            return spriteArray[index];
+        }
+        // Fallback to index 0 if target index is null
+        return spriteArray[0];
+    }
+
+    private void ShowRatingUI(Sprite sprite, bool isPlayerOnLeft)
+    {
+        if (sprite == null)
+        {
+            ClearRatingDisplay();
+            return;
+        }
+
+        // Explicit dual displays (Left & Right)
+        if (ratingImageDisplayLeft != null && ratingImageDisplayRight != null)
+        {
+            if (isPlayerOnLeft)
             {
-                ratingImageDisplay.sprite = selectedSprite;
-                ratingImageDisplay.gameObject.SetActive(true);
+                // Player on Left -> Show rating on Right
+                ratingImageDisplayLeft.gameObject.SetActive(false);
+                ratingImageDisplayRight.sprite = sprite;
+                ratingImageDisplayRight.gameObject.SetActive(true);
             }
             else
             {
-                ratingImageDisplay.gameObject.SetActive(false);
+                // Player on Right -> Show rating on Left
+                ratingImageDisplayRight.gameObject.SetActive(false);
+                ratingImageDisplayLeft.sprite = sprite;
+                ratingImageDisplayLeft.gameObject.SetActive(true);
             }
+            return;
         }
 
-        StopAllCoroutines();
-        StartCoroutine(ClearDisplayRoutine());
-    }
-
-    private Sprite GetRandomSprite(Sprite[] spriteArray)
-    {
-        if (spriteArray == null || spriteArray.Length == 0) return null;
-
-        List<Sprite> validSprites = new List<Sprite>();
-        foreach (var s in spriteArray)
+        // Single display with dynamic anchored position
+        if (ratingImageDisplay != null)
         {
-            if (s != null) validSprites.Add(s);
+            ratingImageDisplay.sprite = sprite;
+            RectTransform rect = ratingImageDisplay.rectTransform;
+            if (rect != null)
+            {
+                Vector2 pos = rect.anchoredPosition;
+                pos.x = isPlayerOnLeft ? Mathf.Abs(ratingOffsetX) : -Mathf.Abs(ratingOffsetX);
+                rect.anchoredPosition = pos;
+            }
+            ratingImageDisplay.gameObject.SetActive(true);
         }
-
-        if (validSprites.Count == 0) return null;
-        return validSprites[Random.Range(0, validSprites.Count)];
     }
 
-    private void ClearDisplay()
+    private void ClearRatingDisplay()
     {
         currentRatingSprite = null;
         displayTimer = 0f;
+
         if (ratingImageDisplay != null)
-        {
             ratingImageDisplay.gameObject.SetActive(false);
-        }
+        if (ratingImageDisplayLeft != null)
+            ratingImageDisplayLeft.gameObject.SetActive(false);
+        if (ratingImageDisplayRight != null)
+            ratingImageDisplayRight.gameObject.SetActive(false);
     }
 
-    private IEnumerator ClearDisplayRoutine()
+    private IEnumerator ClearRatingDisplayRoutine()
     {
         while (displayTimer > 0)
         {
             displayTimer -= Time.unscaledDeltaTime;
             yield return null;
         }
-        ClearDisplay();
+        ClearRatingDisplay();
+    }
+
+    private void UpdateComboUI(int combo)
+    {
+        if (combo <= 0)
+        {
+            if (comboImageDisplay != null)
+                comboImageDisplay.gameObject.SetActive(false);
+            return;
+        }
+
+        if (comboImageDisplay == null) return;
+
+        // Select Combo Tier Sprite & Font Color:
+        // Tier 1: combo < 20 (Blue)
+        // Tier 2: 20 <= combo < 50 (Yellow)
+        // Tier 3: combo >= 50 (Red/Pink)
+        Sprite selectedComboSprite = null;
+        Color targetFontColor = comboTier1Color;
+
+        if (combo < 20)
+        {
+            selectedComboSprite = comboTier1Sprite;
+            targetFontColor = comboTier1Color;
+        }
+        else if (combo < 50)
+        {
+            selectedComboSprite = comboTier2Sprite != null ? comboTier2Sprite : comboTier1Sprite;
+            targetFontColor = comboTier2Color;
+        }
+        else
+        {
+            selectedComboSprite = comboTier3Sprite != null ? comboTier3Sprite : (comboTier2Sprite != null ? comboTier2Sprite : comboTier1Sprite);
+            targetFontColor = comboTier3Color;
+        }
+
+        if (selectedComboSprite != null)
+        {
+            comboImageDisplay.sprite = selectedComboSprite;
+        }
+
+        // Update Combo Text (1X, 2X, 5X...) & apply tier font color + size + shadow
+        string comboStr = string.Format(comboTextFormat, combo);
+        if (comboTextTMP != null)
+        {
+            comboTextTMP.color = targetFontColor;
+            comboTextTMP.alignment = TextAlignmentOptions.Center;
+            if (useAutoFontSize)
+            {
+                comboTextTMP.enableAutoSizing = true;
+                comboTextTMP.fontSizeMin = 24f;
+                comboTextTMP.fontSizeMax = 54f;
+            }
+            else
+            {
+                comboTextTMP.enableAutoSizing = false;
+                comboTextTMP.fontSize = comboFontSize;
+            }
+            comboTextTMP.text = comboStr;
+            ApplyTextShadow(comboTextTMP);
+        }
+        if (comboTextLegacy != null)
+        {
+            comboTextLegacy.color = targetFontColor;
+            comboTextLegacy.alignment = TextAnchor.MiddleCenter;
+            comboTextLegacy.fontSize = Mathf.RoundToInt(comboFontSize);
+            comboTextLegacy.text = comboStr;
+            ApplyTextShadow(comboTextLegacy);
+        }
+
+        comboImageDisplay.gameObject.SetActive(true);
+
+        // Scale punch animation for juicy feel
+        if (comboPunchCoroutine != null)
+        {
+            StopCoroutine(comboPunchCoroutine);
+        }
+        comboPunchCoroutine = StartCoroutine(ComboPunchRoutine());
+    }
+
+    private void ApplyTextShadow(Graphic textGraphic)
+    {
+        if (textGraphic == null) return;
+        Shadow shadow = textGraphic.GetComponent<Shadow>();
+        if (enableTextShadow)
+        {
+            if (shadow == null)
+            {
+                shadow = textGraphic.gameObject.AddComponent<Shadow>();
+            }
+            shadow.effectColor = textShadowColor;
+            shadow.effectDistance = textShadowOffset;
+            shadow.enabled = true;
+        }
+        else if (shadow != null)
+        {
+            shadow.enabled = false;
+        }
+    }
+
+    private IEnumerator ComboPunchRoutine()
+    {
+        if (comboImageDisplay == null) yield break;
+
+        Transform t = comboImageDisplay.transform;
+        Vector3 targetScale = comboOriginalScale * 1.3f;
+        t.localScale = targetScale;
+
+        float elapsed = 0f;
+        float duration = 0.15f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            t.localScale = Vector3.Lerp(targetScale, comboOriginalScale, elapsed / duration);
+            yield return null;
+        }
+
+        t.localScale = comboOriginalScale;
     }
 
     private void OnGUI()
