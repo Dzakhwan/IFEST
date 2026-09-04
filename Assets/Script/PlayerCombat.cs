@@ -62,18 +62,18 @@ public class PlayerCombat : MonoBehaviour
         HitRating rating = BeatManager.Instance.EvaluateHitTiming();
         int currentWaypoint = playerMovement != null ? playerMovement.GetCurrentWaypointIndex() : 0;
 
-        // Find active target enemy in line
+        // Find active target enemy and adjacent enemy (distance == 1)
         Enemy activeEnemy = GetActiveTargetEnemy();
-        Enemy enemyAtWaypoint = FindEnemyAtWaypoint(currentWaypoint);
+        Enemy targetEnemy = FindAdjacentEnemy(currentWaypoint, activeEnemy);
 
         if (rating != HitRating.Miss)
         {
-            if (enemyAtWaypoint != null)
+            if (targetEnemy != null)
             {
-                if (enemyAtWaypoint == activeEnemy && enemyAtWaypoint.IsActiveTarget)
+                if (targetEnemy == activeEnemy && targetEnemy.IsActiveTarget)
                 {
                     animator.SetTrigger("Attack");
-                    bool success = enemyAtWaypoint.ProcessHit(rating);
+                    bool success = targetEnemy.ProcessHit(rating);
                     if (success)
                     {
                         comboCount++;
@@ -97,7 +97,7 @@ public class PlayerCombat : MonoBehaviour
             {
                 comboCount = 0;
                 BeatManager.Instance.SetCombo(0);
-                Debug.Log($"<color=orange>[WHIFF]</color> No enemy at waypoint {currentWaypoint}. Combo reset.");
+                Debug.Log($"<color=orange>[WHIFF]</color> No enemy adjacent to waypoint {currentWaypoint}. Combo reset.");
                 OnAttackExecuted?.Invoke(HitRating.Miss, 0, "NO TARGET!");
             }
         }
@@ -174,12 +174,27 @@ public class PlayerCombat : MonoBehaviour
         return null;
     }
 
-    private Enemy FindEnemyAtWaypoint(int waypointIndex)
+    /// <summary>
+    /// Finds an enemy located on a waypoint directly adjacent (distance of 1 index) to the player's current waypoint.
+    /// Prioritizes the currently active target enemy.
+    /// </summary>
+    /// <param name="currentWaypoint">Player's current waypoint index.</param>
+    /// <param name="activeEnemy">The currently active target enemy in turn queue.</param>
+    /// <returns>Adjacent enemy instance if found, or null if no enemy is adjacent.</returns>
+    private Enemy FindAdjacentEnemy(int currentWaypoint, Enemy activeEnemy)
     {
         Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+
+        // Prioritize active target if it is adjacent to the player (distance == 1)
+        if (activeEnemy != null && Mathf.Abs(activeEnemy.WaypointIndex - currentWaypoint) == 1)
+        {
+            return activeEnemy;
+        }
+
+        // Check if any other enemy is adjacent to the player (distance == 1)
         foreach (var enemy in enemies)
         {
-            if (enemy != null && enemy.WaypointIndex == waypointIndex)
+            if (enemy != null && Mathf.Abs(enemy.WaypointIndex - currentWaypoint) == 1)
             {
                 return enemy;
             }

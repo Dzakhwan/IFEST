@@ -9,6 +9,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform[] waypoints;
     [SerializeField] private float moveSpeed = 5f;
 
+    /// <summary>
+    /// Gets the list of movement waypoints shared with EnemySpawner.
+    /// </summary>
+    public Transform[] Waypoints => waypoints;
+
     private int currentWaypointIndex = 0;
     private int targetWaypointIndex;
     private bool isMoving = false;
@@ -29,7 +34,6 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         HandleInput();
-
     }
 
     private void FixedUpdate()
@@ -53,31 +57,74 @@ public class PlayerMovement : MonoBehaviour
         {
             MovePrevious();
             spriteRenderer.flipX = true; // Flip sprite when moving left
-
         }
     }
 
+    /// <summary>
+    /// Checks whether an enemy is currently occupying the specified waypoint index.
+    /// </summary>
+    /// <param name="index">The waypoint index to check.</param>
+    /// <returns>True if an enemy is standing on the waypoint, false otherwise.</returns>
+    private bool IsWaypointOccupied(int index)
+    {
+        Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+        foreach (var enemy in enemies)
+        {
+            if (enemy != null && enemy.WaypointIndex == index)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Moves player to the next available waypoint to the right, skipping any waypoints occupied by enemies.
+    /// </summary>
     private void MoveNext()
     {
-        if (currentWaypointIndex >= waypoints.Length - 1)
+        if (waypoints.Length == 0) return;
+
+        int candidate = currentWaypointIndex + 1;
+
+        // Skip waypoints that are occupied by enemies
+        while (candidate < waypoints.Length && IsWaypointOccupied(candidate))
+        {
+            candidate++;
+        }
+
+        if (candidate >= waypoints.Length)
             return;
 
-        targetWaypointIndex = currentWaypointIndex + 1;
+        targetWaypointIndex = candidate;
         Debug.Log(
-        $"NEXT: {currentWaypointIndex} → {targetWaypointIndex} | " +
-        $"Current: {waypoints[currentWaypointIndex].position} | " +
-        $"Target: {waypoints[targetWaypointIndex].position}"
-    );
+            $"NEXT: {currentWaypointIndex} → {targetWaypointIndex} | " +
+            $"Current: {waypoints[currentWaypointIndex].position} | " +
+            $"Target: {waypoints[targetWaypointIndex].position}"
+        );
         isMoving = true;
         SetMovementAnimation(true);
     }
 
+    /// <summary>
+    /// Moves player to the previous available waypoint to the left, skipping any waypoints occupied by enemies.
+    /// </summary>
     private void MovePrevious()
     {
-        if (currentWaypointIndex <= 0)
+        if (waypoints.Length == 0) return;
+
+        int candidate = currentWaypointIndex - 1;
+
+        // Skip waypoints that are occupied by enemies
+        while (candidate >= 0 && IsWaypointOccupied(candidate))
+        {
+            candidate--;
+        }
+
+        if (candidate < 0)
             return;
 
-        targetWaypointIndex = currentWaypointIndex - 1;
+        targetWaypointIndex = candidate;
         isMoving = true;
         SetMovementAnimation(true);
     }
