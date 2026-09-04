@@ -6,6 +6,7 @@ public class Enemy : MonoBehaviour
     [Header("Enemy Attributes")]
     [SerializeField] private int waypointIndex = 1;
     [SerializeField] private bool isActiveTarget = false;
+    [SerializeField] private Animator animator;
 
     [Header("Despawn")]
     [SerializeField] private int maxAliveBeat = 12; // beats before self-destruct
@@ -20,16 +21,34 @@ public class Enemy : MonoBehaviour
     private Vector3 originalScale;
     private Collider2D col;
 
+    private void ResolveSpriteRenderer()
+    {
+        if (spriteRenderer != null)
+            return;
+
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer == null)
+        {
+            SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>(true);
+            if (renderers != null && renderers.Length > 0)
+                spriteRenderer = renderers[0];
+        }
+    }
+
     private void Awake()
     {
-        if (spriteRenderer == null)
-            spriteRenderer = GetComponent<SpriteRenderer>();
+        ResolveSpriteRenderer();
 
         col = GetComponent<Collider2D>();
         if (col != null)
         {
             col.isTrigger = true;
         }
+        if (animator == null)
+            animator = GetComponent<Animator>();
+
+        if (animator != null)
+            animator.SetBool("IsHit", false);
 
         originalScale = transform.localScale;
         UpdateVisuals();
@@ -54,7 +73,15 @@ public class Enemy : MonoBehaviour
     public void SetActiveTarget(bool active)
     {
         isActiveTarget = active;
-        UpdateVisuals();
+        ResolveSpriteRenderer();
+
+        Debug.Log($"[Enemy] {gameObject.name} activeTarget={active}, renderer={(spriteRenderer != null ? spriteRenderer.name : "null")}, oldColor={(spriteRenderer != null ? spriteRenderer.color.ToString() : "null")}");
+
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = active ? activeTargetColor : waitingColor;
+            Debug.Log($"[Enemy] {gameObject.name} set color to {spriteRenderer.color}");
+        }
     }
 
     public void SetWaypointIndex(int index)
@@ -64,6 +91,8 @@ public class Enemy : MonoBehaviour
 
     private void UpdateVisuals()
     {
+        ResolveSpriteRenderer();
+
         if (spriteRenderer != null)
         {
             spriteRenderer.color = isActiveTarget ? activeTargetColor : waitingColor;
@@ -121,8 +150,16 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    private void SetHurtAnimation(bool hit)
+    {
+        if (animator != null)
+            animator.SetBool("IsHit", hit);
+    }
+
     private IEnumerator FlashAndDieRoutine()
     {
+        SetHurtAnimation(true);
+
         // Disable collider immediately so the waypoint opens up for the player
         SetColliderEnabled(false);
 
@@ -160,11 +197,19 @@ public class Enemy : MonoBehaviour
 
     private IEnumerator FlashPenaltyRoutine()
     {
+        SetHurtAnimation(true);
+
         if (spriteRenderer != null)
         {
             spriteRenderer.color = Color.magenta;
             yield return new WaitForSeconds(0.2f);
+            SetHurtAnimation(false);
             UpdateVisuals();
+        }
+        else
+        {
+            yield return new WaitForSeconds(0.2f);
+            SetHurtAnimation(false);
         }
     }
 

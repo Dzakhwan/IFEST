@@ -1,10 +1,19 @@
 fileFormatVersion: 2
-guid: 1a296d73396a4a5438a111d3782566aa
+guid: 3f08b5575426a6a40b0d95ec9629ac67
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -642407422553194737
-    second: Button_START_Hover_0
+      213: 8801383199956027648
+    second: Enemy_hurt_0
+  - first:
+      213: -7235114233181695652
+    second: Enemy_hurt_1
+  - first:
+      213: 309733937905483340
+    second: Enemy_hurt_2
+  - first:
+      213: 7353631151790100103
+    second: Enemy_hurt_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -24,7 +33,7 @@ TextureImporter:
     heightScale: 0.25
     normalMapFilter: 0
     flipGreenChannel: 0
-  isReadable: 1
+  isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
   vTOnly: 0
@@ -51,7 +60,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 400
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -139,13 +148,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Button_START_Hover_0
+      name: Enemy_hurt_0
       rect:
         serializedVersion: 2
-        x: 49
-        y: 69
-        width: 2697
-        height: 1333
+        x: 9
+        y: 3
+        width: 317
+        height: 590
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -154,8 +163,74 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f0f74a15ad5b517f0800000000000000
-      internalID: -642407422553194737
+      spriteID: 009487d736bc42a70800000000000000
+      internalID: 8801383199956027648
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Enemy_hurt_1
+      rect:
+        serializedVersion: 2
+        x: 359
+        y: 0
+        width: 342
+        height: 596
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c5115dd20f5b79b90800000000000000
+      internalID: -7235114233181695652
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Enemy_hurt_2
+      rect:
+        serializedVersion: 2
+        x: 736
+        y: 0
+        width: 404
+        height: 593
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c4e3dbf10656c4400800000000000000
+      internalID: 309733937905483340
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Enemy_hurt_3
+      rect:
+        serializedVersion: 2
+        x: 1154
+        y: 2
+        width: 457
+        height: 586
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 78e02b342985d0660800000000000000
+      internalID: 7353631151790100103
       vertices: []
       indices: 
       edges: []
@@ -164,7 +239,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -174,7 +249,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Button_START_Hover_0: -642407422553194737
+      Enemy_hurt_0: 8801383199956027648
+      Enemy_hurt_1: -7235114233181695652
+      Enemy_hurt_2: 309733937905483340
+      Enemy_hurt_3: 7353631151790100103
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

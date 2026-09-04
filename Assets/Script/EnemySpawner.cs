@@ -22,7 +22,7 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private bool feverRapidFill = true;
 
     // Legacy field preserved for Inspector backwards-compatibility
-    [HideInInspector] [SerializeField] private int spawnEveryNBeats = 2;
+    [HideInInspector][SerializeField] private int spawnEveryNBeats = 2;
 
     public int TotalEnemySlots
     {
@@ -227,7 +227,19 @@ public class EnemySpawner : MonoBehaviour
         if (enemy != null)
         {
             enemy.SetWaypointIndex(slotIndex); // Stores A slot index
-            enemy.SetActiveTarget(false); // Default to waiting line
+
+            Enemy[] allEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+            bool hasActiveTarget = false;
+            foreach (var existingEnemy in allEnemies)
+            {
+                if (existingEnemy != null && existingEnemy.IsActiveTarget)
+                {
+                    hasActiveTarget = true;
+                    break;
+                }
+            }
+
+            enemy.SetActiveTarget(!hasActiveTarget); // First enemy becomes active target when queue is empty
 
             // Notify player combat to update queue if needed
             PlayerCombat combat = FindFirstObjectByType<PlayerCombat>();
@@ -236,7 +248,7 @@ public class EnemySpawner : MonoBehaviour
                 combat.EnsureActiveTarget();
             }
 
-            Debug.Log($"[EnemySpawner] Spawned Waiting Enemy at Slot A{slotIndex} at {spawnPosition}");
+            Debug.Log($"[EnemySpawner] Spawned Enemy at Slot A{slotIndex} at {spawnPosition} | Active={enemy.IsActiveTarget}");
         }
     }
 
