@@ -175,26 +175,38 @@ public class PlayerCombat : MonoBehaviour
     }
 
     /// <summary>
-    /// Finds an enemy located on a waypoint directly adjacent (distance of 1 index) to the player's current waypoint.
-    /// Prioritizes the currently active target enemy.
+    /// Finds an adjacent enemy in the direction the player is currently facing.
+    /// In ABABABABA layout, player at node B_k attacks:
+    /// - Slot A_k (to the right, between B_k and B_{k+1}) when facing right.
+    /// - Slot A_{k-1} (to the left, between B_{k-1} and B_k) when facing left.
     /// </summary>
-    /// <param name="currentWaypoint">Player's current waypoint index.</param>
+    /// <param name="currentWaypoint">Player's current node index B_k.</param>
     /// <param name="activeEnemy">The currently active target enemy in turn queue.</param>
-    /// <returns>Adjacent enemy instance if found, or null if no enemy is adjacent.</returns>
+    /// <returns>Adjacent enemy in the facing slot if found, or null if none.</returns>
     private Enemy FindAdjacentEnemy(int currentWaypoint, Enemy activeEnemy)
     {
-        Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+        int targetSlot = (playerMovement != null && playerMovement.IsFacingLeft) 
+            ? currentWaypoint - 1 
+            : currentWaypoint;
 
-        // Prioritize active target if it is adjacent to the player (distance == 1)
-        if (activeEnemy != null && Mathf.Abs(activeEnemy.WaypointIndex - currentWaypoint) == 1)
+        if (playerMovement != null && playerMovement.Waypoints != null)
+        {
+            int totalSlots = playerMovement.Waypoints.Length - 1;
+            if (targetSlot < 0 || targetSlot >= totalSlots)
+                return null;
+        }
+
+        // Prioritize active target if it is at the facing slot
+        if (activeEnemy != null && activeEnemy.WaypointIndex == targetSlot)
         {
             return activeEnemy;
         }
 
-        // Check if any other enemy is adjacent to the player (distance == 1)
+        // Check if any other enemy is at the facing slot
+        Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
         foreach (var enemy in enemies)
         {
-            if (enemy != null && Mathf.Abs(enemy.WaypointIndex - currentWaypoint) == 1)
+            if (enemy != null && enemy.WaypointIndex == targetSlot)
             {
                 return enemy;
             }
