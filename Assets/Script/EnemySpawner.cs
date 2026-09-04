@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class EnemySpawner : MonoBehaviour
@@ -5,11 +6,46 @@ public class EnemySpawner : MonoBehaviour
     [Header("Spawner Configuration")]
     [SerializeField] private GameObject enemyPrefab;
     [SerializeField] private PlayerMovement playerMovement;
-    [SerializeField] private Transform[] waypoints;
+    [SerializeField] private Transform[] waypoints; // Player B nodes
+    [SerializeField] private Transform[] customEnemySlots; // Optional custom A slots
     [SerializeField] private int spawnEveryNBeats = 6;
     [SerializeField] private bool autoSpawnOnBeat = true;
+    [SerializeField] private int maxEnemies = 6;
 
-    private int lastSpawnedWaypoint = -1;
+    public int TotalEnemySlots
+    {
+        get
+        {
+            if (customEnemySlots != null && customEnemySlots.Length > 0)
+                return customEnemySlots.Length;
+            if (waypoints != null && waypoints.Length > 1)
+                return waypoints.Length - 1;
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Gets the world position for enemy slot A_k.
+    /// Uses customEnemySlots if assigned, otherwise automatically computes the midpoint between player nodes B_k and B_{k+1}.
+    /// </summary>
+    public Vector3 GetSlotPosition(int slotIndex)
+    {
+        if (customEnemySlots != null && slotIndex >= 0 && slotIndex < customEnemySlots.Length)
+        {
+            if (customEnemySlots[slotIndex] != null)
+                return customEnemySlots[slotIndex].position;
+        }
+
+        if (waypoints != null && slotIndex >= 0 && slotIndex < waypoints.Length - 1)
+        {
+            if (waypoints[slotIndex] != null && waypoints[slotIndex + 1] != null)
+            {
+                return (waypoints[slotIndex].position + waypoints[slotIndex + 1].position) * 0.5f;
+            }
+        }
+
+        return Vector3.zero;
+    }
 
     private void Start()
     {
@@ -37,9 +73,6 @@ public class EnemySpawner : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Evaluates beat interval to spawn new enemies and ensures player waypoints are synced.
-    /// </summary>
     private void OnBeatCheck(int beatCount)
     {
         if (!autoSpawnOnBeat || enemyPrefab == null)
@@ -64,44 +97,95 @@ public class EnemySpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// Spawns an enemy at the next sequential waypoint, automatically skipping the waypoint currently occupied by the player.
+    /// Spawns an enemy at a valid A slot, respecting max count and anti-corner-trap rules.
     /// </summary>
     public void SpawnNextEnemy()
     {
-        if (waypoints == null || waypoints.Length == 0) return;
+        int totalSlots = TotalEnemySlots;
+        if (totalSlots == 0) return;
 
         if (playerMovement == null)
         {
             playerMovement = FindFirstObjectByType<PlayerMovement>();
         }
 
-        int playerWaypoint = playerMovement != null ? playerMovement.GetCurrentWaypointIndex() : -1;
-        int targetIndex = (lastSpawnedWaypoint + 1) % waypoints.Length;
-
-        // Skip waypoint if player is currently on it (unless only 1 waypoint exists)
-        if (waypoints.Length > 1 && targetIndex == playerWaypoint)
+        // Cap: don't spawn if at max enemies
+        Enemy[] existingEnemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+        if (existingEnemies.Length >= maxEnemies)
         {
-            targetIndex = (targetIndex + 1) % waypoints.Length;
+            Debug.Log($"[EnemySpawner] Max enemies ({maxEnemies}) reached. Skipping spawn.");
+            return;
         }
 
-        SpawnEnemyAtWaypoint(targetIndex);
+        int playerNode = playerMovement != null ? playerMovement.GetCurrentWaypointIndex() : 0;
+
+        // Build occupied slots set
+        HashSet<int> occupiedSlots = new HashSet<int>();
+        foreach (var enemy in existingEnemies)
+        {
+            if (enemy != null)
+                occupiedSlots.Add(enemy.WaypointIndex);
+        }
+
+        // Find free slots
+        List<int> freeSlots = new List<int>();
+        for (int i = 0; i < totalSlots; i++)
+        {
+            if (!occupiedSlots.Contains(i))
+                freeSlots.Add(i);
+        }
+
+        if (freeSlots.Count == 0)
+        {
+            Debug.Log("[EnemySpawner] No free enemy slots. Skipping spawn.");
+            return;
+        }
+
+        // Anti-corner-trap: avoid spawning at the only exit slot if player is in a corner
+        List<int> safeSlots = new List<int>();
+        foreach (int slot in freeSlots)
+        {
+            if (!WouldTrapPlayer(slot, playerNode, totalSlots))
+            {
+                safeSlots.Add(slot);
+            }
+        }
+
+        List<int> pool = safeSlots.Count > 0 ? safeSlots : freeSlots;
+        int targetSlot = pool[Random.Range(0, pool.Count)];
+        SpawnEnemyAtSlot(targetSlot);
+    }
+
+    private bool WouldTrapPlayer(int candidateSlot, int playerNode, int totalSlots)
+    {
+        // If player is at B0, the only exit is slot A0. Don't trap player in corner if other slots exist
+        if (playerNode == 0 && candidateSlot == 0 && totalSlots > 1)
+            return true;
+
+        // If player is at B_last, the only exit is slot A_{totalSlots-1}. Don't trap player in corner
+        int lastPlayerNode = (waypoints != null) ? waypoints.Length - 1 : totalSlots;
+        if (playerNode == lastPlayerNode && candidateSlot == totalSlots - 1 && totalSlots > 1)
+            return true;
+
+        return false;
     }
 
     /// <summary>
-    /// Instantiates enemy prefab at specified waypoint index and registers it in turn queue.
+    /// Instantiates enemy prefab at specified A slot index.
     /// </summary>
-    /// <param name="waypointIndex">Target waypoint index to spawn enemy.</param>
-    public void SpawnEnemyAtWaypoint(int waypointIndex)
+    /// <param name="slotIndex">Target enemy slot index A_k.</param>
+    public void SpawnEnemyAtSlot(int slotIndex)
     {
-        if (waypointIndex < 0 || waypointIndex >= waypoints.Length) return;
+        int totalSlots = TotalEnemySlots;
+        if (slotIndex < 0 || slotIndex >= totalSlots) return;
 
-        Transform spawnPoint = waypoints[waypointIndex];
-        GameObject newEnemyObj = Instantiate(enemyPrefab, spawnPoint.position, Quaternion.identity);
+        Vector3 spawnPosition = GetSlotPosition(slotIndex);
+        GameObject newEnemyObj = Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
 
         Enemy enemy = newEnemyObj.GetComponent<Enemy>();
         if (enemy != null)
         {
-            enemy.SetWaypointIndex(waypointIndex);
+            enemy.SetWaypointIndex(slotIndex); // Stores A slot index
             enemy.SetActiveTarget(false); // Default to waiting line
 
             // Notify player combat to update queue if needed
@@ -111,9 +195,9 @@ public class EnemySpawner : MonoBehaviour
                 combat.EnsureActiveTarget();
             }
 
-            Debug.Log($"[EnemySpawner] Spawned Waiting Enemy at Waypoint {waypointIndex}");
+            Debug.Log($"[EnemySpawner] Spawned Waiting Enemy at Slot A{slotIndex} at {spawnPosition}");
         }
-
-        lastSpawnedWaypoint = waypointIndex;
     }
+
+    public void SpawnEnemyAtWaypoint(int waypointIndex) => SpawnEnemyAtSlot(waypointIndex);
 }

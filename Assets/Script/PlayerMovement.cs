@@ -17,6 +17,8 @@ public class PlayerMovement : MonoBehaviour
     private int currentWaypointIndex = 0;
     private int targetWaypointIndex;
     private bool isMoving = false;
+    private float moveTimer = 0f;
+    private const float MAX_MOVE_DURATION = 0.6f;
 
     private void Awake()
     {
@@ -41,6 +43,11 @@ public class PlayerMovement : MonoBehaviour
         MoveToWaypoint();
     }
 
+    /// <summary>
+    /// Returns true if player sprite is currently flipped (facing left).
+    /// </summary>
+    public bool IsFacingLeft => spriteRenderer != null && spriteRenderer.flipX;
+
     private void HandleInput()
     {
         if (isMoving || waypoints.Length == 0)
@@ -55,76 +62,101 @@ public class PlayerMovement : MonoBehaviour
         }
         else if (input.x < 0)
         {
+            spriteRenderer.flipX = true;
             MovePrevious();
-            spriteRenderer.flipX = true; // Flip sprite when moving left
         }
     }
 
     /// <summary>
-    /// Checks whether an enemy is currently occupying the specified waypoint index.
+    /// Finds any blocking enemy currently occupying the specified enemy slot A_k.
+    /// In ABABABABA layout, slot A_k is located between player node B_k and B_{k+1}.
     /// </summary>
-    /// <param name="index">The waypoint index to check.</param>
-    /// <returns>True if an enemy is standing on the waypoint, false otherwise.</returns>
-    private bool IsWaypointOccupied(int index)
+    /// <param name="slotIndex">The enemy slot index to check.</param>
+    /// <returns>Enemy instance if found and blocking, null otherwise.</returns>
+    public Enemy GetEnemyAtSlot(int slotIndex)
     {
         Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
         foreach (var enemy in enemies)
         {
-            if (enemy != null && enemy.WaypointIndex == index)
+            if (enemy != null && enemy.IsBlocking && enemy.WaypointIndex == slotIndex)
             {
-                return true;
+                return enemy;
             }
         }
-        return false;
+        return null;
     }
 
     /// <summary>
-    /// Moves player to the next available waypoint to the right, skipping any waypoints occupied by enemies.
+    /// Checks whether an enemy slot currently has a blocking enemy.
+    /// </summary>
+    public bool IsSlotOccupied(int slotIndex)
+    {
+        return GetEnemyAtSlot(slotIndex) != null;
+    }
+
+    public Enemy GetEnemyAtWaypoint(int index) => GetEnemyAtSlot(index);
+    public bool IsWaypointOccupied(int index) => IsSlotOccupied(index);
+
+    /// <summary>
+    /// Moves player to the next player node B_{k+1} to the right.
+    /// Checks enemy slot A_k between current node and next node.
+    /// If slot has the Active Target (red), player stops and cannot pass.
+    /// If slot is empty or has a waiting (gray) enemy, player advances to B_{k+1}.
     /// </summary>
     private void MoveNext()
     {
         if (waypoints.Length == 0) return;
 
         int candidate = currentWaypointIndex + 1;
+        if (candidate >= waypoints.Length) return;
 
-        // Skip waypoints that are occupied by enemies
-        while (candidate < waypoints.Length && IsWaypointOccupied(candidate))
+        // Slot A_k is between B_k (currentWaypointIndex) and B_{k+1} (candidate)
+        Enemy enemy = GetEnemyAtSlot(currentWaypointIndex);
+        if (enemy != null && enemy.IsActiveTarget)
         {
-            candidate++;
-        }
-
-        if (candidate >= waypoints.Length)
+            // Red enemy blocks the path: player must defeat it first!
             return;
+        }
 
         targetWaypointIndex = candidate;
         Debug.Log(
-            $"NEXT: {currentWaypointIndex} → {targetWaypointIndex} | " +
+            $"NEXT: B{currentWaypointIndex} → B{targetWaypointIndex} | " +
             $"Current: {waypoints[currentWaypointIndex].position} | " +
             $"Target: {waypoints[targetWaypointIndex].position}"
         );
+        moveTimer = 0f;
         isMoving = true;
         SetMovementAnimation(true);
     }
 
     /// <summary>
-    /// Moves player to the previous available waypoint to the left, skipping any waypoints occupied by enemies.
+    /// Moves player to the previous player node B_{k-1} to the left.
+    /// Checks enemy slot A_{k-1} between current node and previous node.
+    /// If slot has the Active Target (red), player stops and cannot pass.
+    /// If slot is empty or has a waiting (gray) enemy, player advances to B_{k-1}.
     /// </summary>
     private void MovePrevious()
     {
         if (waypoints.Length == 0) return;
 
         int candidate = currentWaypointIndex - 1;
+        if (candidate < 0) return;
 
-        // Skip waypoints that are occupied by enemies
-        while (candidate >= 0 && IsWaypointOccupied(candidate))
+        // Slot A_{k-1} is between B_{k-1} (candidate) and B_k (currentWaypointIndex)
+        Enemy enemy = GetEnemyAtSlot(candidate);
+        if (enemy != null && enemy.IsActiveTarget)
         {
-            candidate--;
+            // Red enemy blocks the path: player must defeat it first!
+            return;
         }
 
-        if (candidate < 0)
-            return;
-
         targetWaypointIndex = candidate;
+        Debug.Log(
+            $"PREV: B{currentWaypointIndex} → B{targetWaypointIndex} | " +
+            $"Current: {waypoints[currentWaypointIndex].position} | " +
+            $"Target: {waypoints[targetWaypointIndex].position}"
+        );
+        moveTimer = 0f;
         isMoving = true;
         SetMovementAnimation(true);
     }
@@ -134,9 +166,8 @@ public class PlayerMovement : MonoBehaviour
         if (!isMoving)
             return;
 
+        moveTimer += Time.fixedDeltaTime;
         Vector2 targetPosition = waypoints[targetWaypointIndex].position;
-
-
 
         Vector2 newPosition = Vector2.MoveTowards(
             rb.position,
@@ -146,11 +177,16 @@ public class PlayerMovement : MonoBehaviour
 
         rb.MovePosition(newPosition);
 
-        if (Vector2.Distance(newPosition, targetPosition) < 0.01f)
+        bool reached = Vector2.Distance(newPosition, targetPosition) < 0.05f
+                    || Vector2.Distance(rb.position, targetPosition) < 0.05f
+                    || moveTimer >= MAX_MOVE_DURATION;
+
+        if (reached)
         {
             rb.position = targetPosition;
             currentWaypointIndex = targetWaypointIndex;
             isMoving = false;
+            moveTimer = 0f;
             SetMovementAnimation(false);
         }
     }

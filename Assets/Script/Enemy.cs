@@ -7,18 +7,29 @@ public class Enemy : MonoBehaviour
     [SerializeField] private int waypointIndex = 1;
     [SerializeField] private bool isActiveTarget = false;
 
+    [Header("Despawn")]
+    [SerializeField] private int maxAliveBeat = 12; // beats before self-destruct
+    private int beatsAlive = 0;
+
     [Header("Visual Feedback")]
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Color activeTargetColor = Color.red;
-    [SerializeField] private Color waitingColor = new Color(0.5f, 0.5f, 0.5f, 0.7f); // Dimmed waiting turn
+    [SerializeField] private Color waitingColor = new Color(0.5f, 0.5f, 0.5f, 0.7f);
     [SerializeField] private Color hitFlashColor = Color.yellow;
 
     private Vector3 originalScale;
+    private Collider2D col;
 
     private void Awake()
     {
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();
+
+        col = GetComponent<Collider2D>();
+        if (col != null)
+        {
+            col.isTrigger = true;
+        }
 
         originalScale = transform.localScale;
         UpdateVisuals();
@@ -61,7 +72,14 @@ public class Enemy : MonoBehaviour
 
     private void OnBeatPulse(int beat)
     {
-        // Pulse only if active target or subtle pulse
+        beatsAlive++;
+
+        if (beatsAlive >= maxAliveBeat)
+        {
+            StartCoroutine(DespawnRoutine());
+            return;
+        }
+
         if (isActiveTarget)
         {
             StartCoroutine(PulseRoutine());
@@ -105,6 +123,9 @@ public class Enemy : MonoBehaviour
 
     private IEnumerator FlashAndDieRoutine()
     {
+        // Disable collider immediately so the waypoint opens up for the player
+        SetColliderEnabled(false);
+
         if (spriteRenderer != null)
             spriteRenderer.color = hitFlashColor;
 
@@ -122,6 +143,30 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    private IEnumerator DespawnRoutine()
+    {
+        SetColliderEnabled(false);
+
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = new Color(1f, 0.5f, 0f);
+            yield return new WaitForSeconds(0.2f);
+        }
+        Destroy(gameObject);
+    }
+
+    private void SetColliderEnabled(bool enabled)
+    {
+        if (col != null)
+            col.enabled = enabled;
+    }
+
     public bool IsActiveTarget => isActiveTarget;
     public int WaypointIndex => waypointIndex;
+
+    /// <summary>
+    /// True while this enemy physically blocks its waypoint (collider enabled).
+    /// False during hit/despawn flash so the player can pass through immediately.
+    /// </summary>
+    public bool IsBlocking => col != null && col.enabled;
 }
