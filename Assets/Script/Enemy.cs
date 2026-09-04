@@ -133,6 +133,31 @@ public class Enemy : MonoBehaviour
         Destroy(gameObject);
     }
 
+    /// <summary>
+    /// Triggered when this enemy is hit by a Domino Chain Reaction during Fever mode.
+    /// </summary>
+    public void TriggerDominoDeath(float delay)
+    {
+        SetColliderEnabled(false);
+        StartCoroutine(DominoExplodeRoutine(delay));
+    }
+
+    private IEnumerator DominoExplodeRoutine(float delay)
+    {
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
+
+        if (spriteRenderer != null)
+            spriteRenderer.color = new Color(1f, 0.3f, 0f); // Fiery orange-red explosion color
+
+        // Pop scale burst effect
+        transform.localScale = originalScale * 1.4f;
+
+        Debug.Log($"<color=red>[DOMINO EXPLOSION!]</color> Enemy at Waypoint {waypointIndex} wiped by chain reaction!");
+        yield return new WaitForSeconds(0.12f);
+        Destroy(gameObject);
+    }
+
     private IEnumerator FlashPenaltyRoutine()
     {
         if (spriteRenderer != null)

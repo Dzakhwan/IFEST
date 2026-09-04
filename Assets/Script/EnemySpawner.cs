@@ -8,9 +8,21 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private Transform[] waypoints; // Player B nodes
     [SerializeField] private Transform[] customEnemySlots; // Optional custom A slots
-    [SerializeField] private int spawnEveryNBeats = 6;
     [SerializeField] private bool autoSpawnOnBeat = true;
     [SerializeField] private int maxEnemies = 6;
+
+    [Header("Adaptive Spawn Rates (Per State)")]
+    [Tooltip("Normal mode spawn interval in beats (Default: 2 beats = 2x faster than 4 beats).")]
+    [SerializeField] private int normalSpawnEveryNBeats = 2;
+    [Tooltip("To Fever mode spawn interval in beats (Default: 2 beats).")]
+    [SerializeField] private int toFeverSpawnEveryNBeats = 2;
+    [Tooltip("Fever mode spawn interval in beats (Default: 1 beat = 4x faster than 4 beats).")]
+    [SerializeField] private int feverSpawnEveryNBeats = 1;
+    [Tooltip("In Fever mode, rapidly spawn an extra enemy if count drops below 3 after domino wipe.")]
+    [SerializeField] private bool feverRapidFill = true;
+
+    // Legacy field preserved for Inspector backwards-compatibility
+    [HideInInspector] [SerializeField] private int spawnEveryNBeats = 2;
 
     public int TotalEnemySlots
     {
@@ -90,9 +102,38 @@ public class EnemySpawner : MonoBehaviour
             }
         }
 
-        if (beatCount > 0 && beatCount % spawnEveryNBeats == 0)
+        // Determine active spawn rate based on current rhythm state
+        int interval = normalSpawnEveryNBeats;
+        bool isFever = false;
+
+        if (BeatManager.Instance != null)
+        {
+            if (BeatManager.Instance.IsFeverActive)
+            {
+                interval = feverSpawnEveryNBeats;
+                isFever = true;
+            }
+            else if (BeatManager.Instance.CurrentState == GameRhythmState.ToFever)
+            {
+                interval = toFeverSpawnEveryNBeats;
+            }
+        }
+
+        if (interval <= 0) interval = 1;
+
+        if (beatCount > 0 && beatCount % interval == 0)
         {
             SpawnNextEnemy();
+
+            // Fever rapid refill: if domino cascade wiped out almost all enemies, fill an extra slot
+            if (isFever && feverRapidFill)
+            {
+                Enemy[] remaining = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+                if (remaining.Length < 3)
+                {
+                    SpawnNextEnemy();
+                }
+            }
         }
     }
 
