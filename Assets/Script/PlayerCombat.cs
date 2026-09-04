@@ -16,6 +16,12 @@ public class PlayerCombat : MonoBehaviour
     [Tooltip("Maximum number of waiting enemies that can be wiped in a single domino chain.")]
     [SerializeField] private int maxDominoChainCount = 3;
 
+    [Header("Combat Audio Feedback")]
+    [SerializeField] private AudioClip hitSound;
+    [SerializeField] private AudioClip missSound;
+    [Range(0f, 1f)] [SerializeField] private float sfxVolume = 1f;
+    [SerializeField] private AudioSource audioSource;
+
     // Events
     public event Action<HitRating, int, string> OnAttackExecuted; // rating, combo, customMessage
 
@@ -29,6 +35,14 @@ public class PlayerCombat : MonoBehaviour
             playerMovement = GetComponent<PlayerMovement>();
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
+
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+        }
     }
 
     private void Start()
@@ -85,6 +99,7 @@ public class PlayerCombat : MonoBehaviour
                     {
                         comboCount++;
                         BeatManager.Instance.SetCombo(comboCount);
+                        PlayHitSound(rating);
                         Debug.Log($"<color=green>[1-HIT TURN KILL: {rating.ToString().ToUpper()}]</color> Combo x{comboCount}");
                         OnAttackExecuted?.Invoke(rating, comboCount, $"{rating.ToString().ToUpper()}!");
 
@@ -112,6 +127,7 @@ public class PlayerCombat : MonoBehaviour
                 {
                     comboCount = 0;
                     BeatManager.Instance.SetCombo(0);
+                    PlayMissSound();
                     if (BeatManager.Instance.CurrentState == GameRhythmState.Normal)
                     {
                         BeatManager.Instance.ResetNormalFeverProgress();
@@ -128,6 +144,7 @@ public class PlayerCombat : MonoBehaviour
             {
                 comboCount = 0;
                 BeatManager.Instance.SetCombo(0);
+                PlayMissSound();
                 if (BeatManager.Instance.CurrentState == GameRhythmState.Normal)
                 {
                     BeatManager.Instance.ResetNormalFeverProgress();
@@ -144,6 +161,7 @@ public class PlayerCombat : MonoBehaviour
         {
             comboCount = 0;
             BeatManager.Instance.SetCombo(0);
+            PlayMissSound();
             if (BeatManager.Instance.CurrentState == GameRhythmState.Normal)
             {
                 BeatManager.Instance.ResetNormalFeverProgress();
@@ -154,6 +172,24 @@ public class PlayerCombat : MonoBehaviour
             }
             Debug.Log($"<color=red>[RHYTHM MISS]</color> Off beat! Combo reset.");
             OnAttackExecuted?.Invoke(HitRating.Miss, 0, "MISS!");
+        }
+    }
+
+    private void PlayHitSound(HitRating rating)
+    {
+        if (hitSound != null && audioSource != null)
+        {
+            audioSource.pitch = (rating == HitRating.Perfect) ? 1.05f : 0.92f;
+            audioSource.PlayOneShot(hitSound, sfxVolume);
+        }
+    }
+
+    private void PlayMissSound()
+    {
+        if (missSound != null && audioSource != null)
+        {
+            audioSource.pitch = 1.0f;
+            audioSource.PlayOneShot(missSound, sfxVolume);
         }
     }
 

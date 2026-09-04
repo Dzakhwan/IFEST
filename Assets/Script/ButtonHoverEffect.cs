@@ -60,6 +60,11 @@ public class ButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         if (audioSource == null)
             audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+        }
 
         // Apply Alpha Hit Test Threshold for irregular/custom sprite shapes
         if (useAlphaHitTest && targetImage != null)

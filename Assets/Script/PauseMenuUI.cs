@@ -5,8 +5,23 @@ public class PauseMenuUI : MonoBehaviour
     [Header("UI Canvas Panel Reference (Optional)")]
     [SerializeField] private GameObject pauseMenuPanel;
 
+    [Header("UI Click Audio Feedback")]
+    [SerializeField] private AudioClip clickSound;
+    [SerializeField] private AudioSource audioSource;
+
     [Header("OnGUI Fallback UI Settings")]
     [SerializeField] private bool useOnGUIFallback = true;
+
+    private void Awake()
+    {
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+        }
+    }
 
     private void OnEnable()
     {
@@ -41,9 +56,18 @@ public class PauseMenuUI : MonoBehaviour
         }
     }
 
+    private void PlayClickSound()
+    {
+        if (clickSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(clickSound);
+        }
+    }
+
     // UI Canvas Button Callbacks
     public void OnPauseButtonClicked()
     {
+        PlayClickSound();
         if (SceneController.Instance != null)
         {
             SceneController.Instance.PauseGame();
@@ -52,6 +76,7 @@ public class PauseMenuUI : MonoBehaviour
 
     public void OnResumeButtonClicked()
     {
+        PlayClickSound();
         if (SceneController.Instance != null)
         {
             SceneController.Instance.ResumeGame();
@@ -60,6 +85,7 @@ public class PauseMenuUI : MonoBehaviour
 
     public void OnRestartButtonClicked()
     {
+        PlayClickSound();
         if (SceneController.Instance != null)
         {
             SceneController.Instance.RestartGame();
@@ -68,6 +94,7 @@ public class PauseMenuUI : MonoBehaviour
 
     public void OnMainMenuButtonClicked()
     {
+        PlayClickSound();
         if (SceneController.Instance != null)
         {
             SceneController.Instance.LoadMainMenu();
@@ -76,6 +103,7 @@ public class PauseMenuUI : MonoBehaviour
 
     public void OnQuitButtonClicked()
     {
+        PlayClickSound();
         if (SceneController.Instance != null)
         {
             SceneController.Instance.QuitGame();

@@ -593,7 +593,7 @@ MonoBehaviour:
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   hoverSound: {fileID: 0}
-  clickSound: {fileID: 0}
+  clickSound: {fileID: 8300000, guid: 104b5e43a5532774cb1dfd1bc433d7c6, type: 3}
   audioSource: {fileID: 0}
   useAlphaHitTest: 1
   alphaThreshold: 0.1
@@ -1029,7 +1029,7 @@ MonoBehaviour:
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   hoverSound: {fileID: 0}
-  clickSound: {fileID: 0}
+  clickSound: {fileID: 8300000, guid: 104b5e43a5532774cb1dfd1bc433d7c6, type: 3}
   audioSource: {fileID: 0}
   useAlphaHitTest: 1
   alphaThreshold: 0.1

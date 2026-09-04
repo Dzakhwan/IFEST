@@ -276,7 +276,7 @@ MonoBehaviour:
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   hoverSound: {fileID: 0}
-  clickSound: {fileID: 0}
+  clickSound: {fileID: 8300000, guid: 104b5e43a5532774cb1dfd1bc433d7c6, type: 3}
   audioSource: {fileID: 0}
   useAlphaHitTest: 1
   alphaThreshold: 0.1
@@ -343,7 +343,7 @@ MonoBehaviour:
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   hoverSound: {fileID: 0}
-  clickSound: {fileID: 0}
+  clickSound: {fileID: 8300000, guid: 104b5e43a5532774cb1dfd1bc433d7c6, type: 3}
   audioSource: {fileID: 0}
   useAlphaHitTest: 1
   alphaThreshold: 0.1
@@ -790,7 +790,7 @@ MonoBehaviour:
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   hoverSound: {fileID: 0}
-  clickSound: {fileID: 0}
+  clickSound: {fileID: 8300000, guid: 104b5e43a5532774cb1dfd1bc433d7c6, type: 3}
   audioSource: {fileID: 0}
   useAlphaHitTest: 1
   alphaThreshold: 0.1
@@ -1305,6 +1305,9 @@ MonoBehaviour:
   - {fileID: 888800004}
   - {fileID: 888800006}
   moveSpeed: 10
+  moveSound: {fileID: 8300000, guid: 86101c33c7147264196f588b513ba9a6, type: 3}
+  moveVolume: 0.85
+  audioSource: {fileID: 0}
 --- !u!114 &794901474
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1437,7 +1440,11 @@ MonoBehaviour:
   playerMovement: {fileID: 794901473}
   animator: {fileID: 794901481}
   requireContiguousDomino: 1
-  maxDominoChainCount: 1
+  maxDominoChainCount: 3
+  hitSound: {fileID: 8300000, guid: 21cbda8b5e753c446bda8307bb18ce5d, type: 3}
+  missSound: {fileID: 8300000, guid: 306ec1ab0b70a0c4b8e3356486a0d837, type: 3}
+  sfxVolume: 1
+  audioSource: {fileID: 0}
 --- !u!70 &794901480
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -2208,7 +2215,7 @@ MonoBehaviour:
   normalSongOffset: 0
   toFeverSongOffset: 0.08
   feverSongOffset: 0
-  playMetronomeClick: 1
+  playMetronomeClick: 0
   audioSource: {fileID: 262220079}
   normalTrack: {fileID: 8300000, guid: 412b7539f98209e48ad7c38a845250f0, type: 3}
   toFeverTrack: {fileID: 8300000, guid: 0594d57705ff8e743a834263eed713be, type: 3}
@@ -2356,7 +2363,7 @@ MonoBehaviour:
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   hoverColor: {r: 1, g: 1, b: 1, a: 1}
   hoverSound: {fileID: 0}
-  clickSound: {fileID: 0}
+  clickSound: {fileID: 8300000, guid: 104b5e43a5532774cb1dfd1bc433d7c6, type: 3}
   audioSource: {fileID: 0}
   useAlphaHitTest: 1
   alphaThreshold: 0.1

@@ -9,6 +9,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform[] waypoints;
     [SerializeField] private float moveSpeed = 5f;
 
+    [Header("Movement Audio Feedback")]
+    [SerializeField] private AudioClip moveSound;
+    [Range(0f, 1f)] [SerializeField] private float moveVolume = 0.85f;
+    [SerializeField] private AudioSource audioSource;
+
     /// <summary>
     /// Gets the list of movement waypoints shared with EnemySpawner.
     /// </summary>
@@ -26,6 +31,14 @@ public class PlayerMovement : MonoBehaviour
         inputHandler = GetComponent<InputHandler>();
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
+
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+        }
 
         if (waypoints.Length > 0)
         {
@@ -127,6 +140,7 @@ public class PlayerMovement : MonoBehaviour
         moveTimer = 0f;
         isMoving = true;
         SetMovementAnimation(true);
+        PlayMoveSound();
     }
 
     /// <summary>
@@ -159,6 +173,15 @@ public class PlayerMovement : MonoBehaviour
         moveTimer = 0f;
         isMoving = true;
         SetMovementAnimation(true);
+        PlayMoveSound();
+    }
+
+    private void PlayMoveSound()
+    {
+        if (moveSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(moveSound, moveVolume);
+        }
     }
 
     private void MoveToWaypoint()
