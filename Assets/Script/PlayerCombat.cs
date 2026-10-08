@@ -99,6 +99,10 @@ public class PlayerCombat : MonoBehaviour
                     {
                         comboCount++;
                         BeatManager.Instance.SetCombo(comboCount);
+                        if (ScoreManager.Instance != null)
+                        {
+                            ScoreManager.Instance.AddHitScore(rating, comboCount);
+                        }
                         PlayHitSound(rating);
                         Debug.Log($"<color=green>[1-HIT TURN KILL: {rating.ToString().ToUpper()}]</color> Combo x{comboCount}");
                         OnAttackExecuted?.Invoke(rating, comboCount, $"{rating.ToString().ToUpper()}!");
@@ -127,6 +131,10 @@ public class PlayerCombat : MonoBehaviour
                 {
                     comboCount = 0;
                     BeatManager.Instance.SetCombo(0);
+                    if (ScoreManager.Instance != null)
+                    {
+                        ScoreManager.Instance.RegisterMiss();
+                    }
                     PlayMissSound();
                     if (BeatManager.Instance.CurrentState == GameRhythmState.Normal)
                     {
@@ -144,6 +152,10 @@ public class PlayerCombat : MonoBehaviour
             {
                 comboCount = 0;
                 BeatManager.Instance.SetCombo(0);
+                if (ScoreManager.Instance != null)
+                {
+                    ScoreManager.Instance.RegisterMiss();
+                }
                 PlayMissSound();
                 if (BeatManager.Instance.CurrentState == GameRhythmState.Normal)
                 {
@@ -161,6 +173,10 @@ public class PlayerCombat : MonoBehaviour
         {
             comboCount = 0;
             BeatManager.Instance.SetCombo(0);
+            if (ScoreManager.Instance != null)
+            {
+                ScoreManager.Instance.RegisterMiss();
+            }
             PlayMissSound();
             if (BeatManager.Instance.CurrentState == GameRhythmState.Normal)
             {
@@ -279,6 +295,10 @@ public class PlayerCombat : MonoBehaviour
                 comboCount++;
             }
             BeatManager.Instance.SetCombo(comboCount);
+            if (ScoreManager.Instance != null)
+            {
+                ScoreManager.Instance.AddDominoChainScore(dominoVictims.Count);
+            }
             Debug.Log($"<color=red>[DOMINO CASCADE!]</color> {dominoVictims.Count} contiguous enemies wiped in chain reaction! Combo x{comboCount}");
         }
     }

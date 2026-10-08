@@ -2131,6 +2131,9 @@ GameObject:
   - component: {fileID: 1213734985}
   - component: {fileID: 1213734987}
   - component: {fileID: 1213734986}
+  - component: {fileID: 1213734990}
+  - component: {fileID: 1213734989}
+  - component: {fileID: 1213734988}
   m_Layer: 0
   m_Name: BeatManager
   m_TagString: Untagged
@@ -2193,6 +2196,12 @@ MonoBehaviour:
   textShadowColor: {r: 0, g: 0, b: 0, a: 0.9}
   textShadowOffset: {x: 2.5, y: -2.5}
   comboTextFormat: '{0}X'
+  scoreTextTMP: {fileID: 0}
+  highScoreTextTMP: {fileID: 0}
+  scoreTextLegacy: {fileID: 0}
+  highScoreTextLegacy: {fileID: 0}
+  timerTextTMP: {fileID: 0}
+  timerTextLegacy: {fileID: 0}
   showVisualMetronome: 1
   useOnGUIDebugUI: 0
 --- !u!114 &1213734987
@@ -2225,6 +2234,65 @@ MonoBehaviour:
   hitsToCompleteToFever: 4
   toFeverDuration: 15
   feverDuration: 31
+--- !u!114 &1213734988
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1213734984}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35ea3c66bdb4e6e40bd77ddc3778551b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ResultsMenuUI
+  resultsPanel: {fileID: 0}
+  titleTextTMP: {fileID: 0}
+  finalScoreTextTMP: {fileID: 0}
+  highScoreTextTMP: {fileID: 0}
+  rankTextTMP: {fileID: 0}
+  maxComboTextTMP: {fileID: 0}
+  accuracyTextTMP: {fileID: 0}
+  breakdownTextTMP: {fileID: 0}
+  useOnGUIFallback: 1
+  resultSound: {fileID: 0}
+  audioSource: {fileID: 0}
+--- !u!114 &1213734989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1213734984}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a1f7678ff349bb4b8662f9502c8b3cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TimeAttackManager
+  timeAttackDurationSeconds: 180
+  autoStartOnRhythmBegin: 1
+--- !u!114 &1213734990
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1213734984}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42944caf4ee29a64a8f47ece1f1726ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScoreManager
+  currentGameMode: 0
+  perfectBasePoints: 100
+  goodBasePoints: 50
+  dominoVictimBasePoints: 150
+  tier1Multiplier: 1
+  tier2Multiplier: 1.2
+  tier3Multiplier: 1.5
+  tier4Multiplier: 2
+  tier5Multiplier: 2.5
+  feverScoreMultiplier: 2
 --- !u!1 &1329132203
 GameObject:
   m_ObjectHideFlags: 0

@@ -41,6 +41,16 @@ public class RhythmUI : MonoBehaviour
     [Header("Combo Text Format Settings")]
     [SerializeField] private string comboTextFormat = "{0}X";                               // Text format (e.g. "5X", "25X", "50X")
 
+    [Header("Score UI References (Optional)")]
+    [SerializeField] private TextMeshProUGUI scoreTextTMP;
+    [SerializeField] private TextMeshProUGUI highScoreTextTMP;
+    [SerializeField] private Text scoreTextLegacy;
+    [SerializeField] private Text highScoreTextLegacy;
+
+    [Header("Timer UI References (Optional)")]
+    [SerializeField] private TextMeshProUGUI timerTextTMP;
+    [SerializeField] private Text timerTextLegacy;
+
     [Header("Visual Metronome Settings")]
     [SerializeField] private bool showVisualMetronome = true;
     [SerializeField] private bool useOnGUIDebugUI = false;
@@ -89,6 +99,18 @@ public class RhythmUI : MonoBehaviour
         {
             BeatManager.Instance.OnBeat += HandleBeatPulse;
         }
+
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.OnScoreChanged += OnScoreChangedHandler;
+            OnScoreChangedHandler(ScoreManager.Instance.CurrentScore, 0, false);
+        }
+
+        if (TimeAttackManager.Instance != null)
+        {
+            TimeAttackManager.Instance.OnTimerUpdated += OnTimerUpdatedHandler;
+            OnTimerUpdatedHandler(TimeAttackManager.Instance.TimeRemaining, TimeAttackManager.FormatTime(TimeAttackManager.Instance.TimeRemaining));
+        }
     }
 
     private void OnDestroy()
@@ -97,6 +119,41 @@ public class RhythmUI : MonoBehaviour
         {
             BeatManager.Instance.OnBeat -= HandleBeatPulse;
         }
+
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.OnScoreChanged -= OnScoreChangedHandler;
+        }
+
+        if (TimeAttackManager.Instance != null)
+        {
+            TimeAttackManager.Instance.OnTimerUpdated -= OnTimerUpdatedHandler;
+        }
+    }
+
+    private void OnScoreChangedHandler(int currentScore, int pointsAdded, bool isCritical)
+    {
+        if (scoreTextTMP != null)
+            scoreTextTMP.text = $"SCORE: {currentScore:N0}";
+        if (scoreTextLegacy != null)
+            scoreTextLegacy.text = $"SCORE: {currentScore:N0}";
+
+        if (ScoreManager.Instance != null)
+        {
+            int hs = ScoreManager.Instance.HighScore;
+            if (highScoreTextTMP != null)
+                highScoreTextTMP.text = $"HIGH: {hs:N0}";
+            if (highScoreTextLegacy != null)
+                highScoreTextLegacy.text = $"HIGH: {hs:N0}";
+        }
+    }
+
+    private void OnTimerUpdatedHandler(float remainingSeconds, string formattedMMSS)
+    {
+        if (timerTextTMP != null)
+            timerTextTMP.text = formattedMMSS;
+        if (timerTextLegacy != null)
+            timerTextLegacy.text = formattedMMSS;
     }
 
     private void HandleBeatPulse(int beat)
@@ -373,7 +430,10 @@ public class RhythmUI : MonoBehaviour
 
     private void OnGUI()
     {
-        // 1. Render Visual Metronome Bar
+        // 1. Render Top Score & Timer HUD
+        DrawTopHUD();
+
+        // 2. Render Visual Metronome Bar
         if (showVisualMetronome && BeatManager.Instance != null)
         {
             DrawVisualMetronome();
@@ -527,6 +587,74 @@ public class RhythmUI : MonoBehaviour
             labelStyle.normal.textColor = new Color(0.85f, 0.85f, 0.95f);
             GUI.Label(new Rect(barX - 150, barY + barHeight + 4, barWidth + 300, 24),
                 $"FEVER BAR: {BeatManager.Instance.NormalFeverProgress}/{BeatManager.Instance.ComboToTriggerToFever} | BPM: {BeatManager.Instance.Bpm:F0} | Offset: {BeatManager.Instance.CurrentSongOffset:+0.00;-0.00;0.00}s", labelStyle);
+        }
+
+        GUI.color = prevColor;
+    }
+
+    private void DrawTopHUD()
+    {
+        Color prevColor = GUI.color;
+
+        // 1. TOP LEFT: SCORE & MULTIPLIER BOX
+        float scoreWidth = 220f;
+        float scoreHeight = 60f;
+        float startX = 20f;
+        float startY = 20f;
+
+        GUI.color = new Color(0.06f, 0.06f, 0.1f, 0.85f);
+        GUI.DrawTexture(new Rect(startX, startY, scoreWidth, scoreHeight), whiteTex);
+
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager sm = ScoreManager.Instance;
+            int score = sm.CurrentScore;
+            int high = sm.HighScore;
+            float comboMult = sm.GetComboMultiplier(sm.CurrentCombo);
+            bool isFever = BeatManager.Instance != null && BeatManager.Instance.IsFeverActive;
+
+            GUIStyle scoreStyle = new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                fontSize = 18,
+                fontStyle = FontStyle.Bold
+            };
+            scoreStyle.normal.textColor = Color.white;
+            GUI.Label(new Rect(startX + 10, startY + 6, scoreWidth - 20, 24), $"SCORE: {score:N0}", scoreStyle);
+
+            GUIStyle subStyle = new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                fontSize = 12,
+                fontStyle = FontStyle.Bold
+            };
+            subStyle.normal.textColor = isFever ? new Color(1f, 0.3f, 0.3f) : new Color(0.2f, 0.85f, 1f);
+            string multText = isFever ? $"{comboMult:F1}x x2.0 FEVER!" : $"{comboMult:F1}x MULTIPLIER";
+            GUI.Label(new Rect(startX + 10, startY + 32, scoreWidth - 20, 20), $"HIGH: {high:N0}  |  {multText}", subStyle);
+        }
+
+        // 2. TOP CENTER: 3-MINUTE TIMER BOX
+        if (TimeAttackManager.Instance != null && ScoreManager.Instance != null && ScoreManager.Instance.CurrentGameMode == GameMode.TimeAttack3Min)
+        {
+            float timerWidth = 140f;
+            float timerHeight = 44f;
+            float timerX = (Screen.width - timerWidth) / 2f;
+            float timerY = 15f;
+
+            GUI.color = new Color(0.08f, 0.08f, 0.12f, 0.9f);
+            GUI.DrawTexture(new Rect(timerX, timerY, timerWidth, timerHeight), whiteTex);
+
+            float timeRem = TimeAttackManager.Instance.TimeRemaining;
+            string timerStr = TimeAttackManager.FormatTime(timeRem);
+
+            GUIStyle timerStyle = new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 20,
+                fontStyle = FontStyle.Bold
+            };
+            timerStyle.normal.textColor = timeRem <= 10f ? Color.red : (timeRem <= 30f ? Color.yellow : Color.cyan);
+            GUI.Label(new Rect(timerX, timerY + 2, timerWidth, timerHeight - 4), $"⏳ {timerStr}", timerStyle);
         }
 
         GUI.color = prevColor;

@@ -101,6 +101,16 @@ public class PauseMenuUI : MonoBehaviour
         }
     }
 
+    public void OnToggleGameModeClicked()
+    {
+        PlayClickSound();
+        if (ScoreManager.Instance != null)
+        {
+            GameMode nextMode = ScoreManager.Instance.CurrentGameMode == GameMode.TimeAttack3Min ? GameMode.Endless : GameMode.TimeAttack3Min;
+            ScoreManager.Instance.SetGameMode(nextMode);
+        }
+    }
+
     public void OnQuitButtonClicked()
     {
         PlayClickSound();
@@ -117,16 +127,16 @@ public class PauseMenuUI : MonoBehaviour
 
         bool isPaused = SceneController.Instance != null && SceneController.Instance.IsPaused;
 
-        // Top-left Pause Button when not paused
+        // Top-right Pause Button when not paused (avoiding top-left Score HUD)
         if (!isPaused)
         {
             GUIStyle pauseBtnStyle = new GUIStyle(GUI.skin.button)
             {
-                fontSize = 16,
+                fontSize = 15,
                 fontStyle = FontStyle.Bold
             };
 
-            if (GUI.Button(new Rect(20, 20, 100, 40), "PAUSE ❚❚", pauseBtnStyle))
+            if (GUI.Button(new Rect(Screen.width - 120, 20, 100, 40), "PAUSE ❚❚", pauseBtnStyle))
             {
                 OnPauseButtonClicked();
             }
@@ -134,8 +144,8 @@ public class PauseMenuUI : MonoBehaviour
         else
         {
             // Centered Pause Overlay Menu
-            float menuWidth = 280f;
-            float menuHeight = 260f;
+            float menuWidth = 300f;
+            float menuHeight = 310f;
             float startX = (Screen.width - menuWidth) / 2f;
             float startY = (Screen.height - menuHeight) / 2f;
 
@@ -151,26 +161,34 @@ public class PauseMenuUI : MonoBehaviour
 
             GUIStyle buttonStyle = new GUIStyle(GUI.skin.button)
             {
-                fontSize = 16,
+                fontSize = 15,
                 fontStyle = FontStyle.Bold
             };
 
-            if (GUI.Button(new Rect(startX + 30, startY + 60, menuWidth - 60, 38), "RESUME ▶", buttonStyle))
+            if (GUI.Button(new Rect(startX + 30, startY + 55, menuWidth - 60, 36), "RESUME ▶", buttonStyle))
             {
                 OnResumeButtonClicked();
             }
 
-            if (GUI.Button(new Rect(startX + 30, startY + 108, menuWidth - 60, 38), "RESTART ↺", buttonStyle))
+            string modeLabel = (ScoreManager.Instance != null && ScoreManager.Instance.CurrentGameMode == GameMode.TimeAttack3Min)
+                ? "MODE: 3-MIN TIME ATTACK ⏳"
+                : "MODE: ENDLESS ♾";
+            if (GUI.Button(new Rect(startX + 30, startY + 100, menuWidth - 60, 36), modeLabel, buttonStyle))
+            {
+                OnToggleGameModeClicked();
+            }
+
+            if (GUI.Button(new Rect(startX + 30, startY + 145, menuWidth - 60, 36), "RESTART ↺", buttonStyle))
             {
                 OnRestartButtonClicked();
             }
 
-            if (GUI.Button(new Rect(startX + 30, startY + 156, menuWidth - 60, 38), "MAIN MENU 🏠", buttonStyle))
+            if (GUI.Button(new Rect(startX + 30, startY + 190, menuWidth - 60, 36), "MAIN MENU 🏠", buttonStyle))
             {
                 OnMainMenuButtonClicked();
             }
 
-            if (GUI.Button(new Rect(startX + 30, startY + 204, menuWidth - 60, 38), "QUIT ✖", buttonStyle))
+            if (GUI.Button(new Rect(startX + 30, startY + 235, menuWidth - 60, 36), "QUIT ✖", buttonStyle))
             {
                 OnQuitButtonClicked();
             }
